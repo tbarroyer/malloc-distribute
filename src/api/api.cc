@@ -368,6 +368,11 @@ namespace api {
         return out;
     }
 
+    int DistributedAllocator::next(int id)
+    {
+        return (*collection)[id].first;
+    }
+
     bool DistributedAllocator::write(int id, int value) {
         std::cout << "Process " << world_rank << " want to write" << std::endl;
 

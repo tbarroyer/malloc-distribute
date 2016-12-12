@@ -9,7 +9,7 @@ int main() {
     DistributedAllocator::init();
 
     // Process 0 ask for allocation
-    if (DistributedAllocator::world_rank == 0) {
+    /*if (DistributedAllocator::world_rank == 0) {
         DistributedAllocator::alloc();
     }
 
@@ -32,20 +32,38 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    /*if (DistributedAllocator::world_rank == 1) {
+    if (DistributedAllocator::world_rank == 1) {
         DistributedAllocator::alloc();
     }*/
-    /*int idx;
+    int head;
+    int idx;
+    unsigned int size = 10;
     if (DistributedAllocator::world_rank == 0) {
-        idx = DistributedAllocator::alloc(9);
-        std::cout << idx << std::endl;
-    }*/
+        head = DistributedAllocator::alloc(size);
+        DistributedAllocator::write(head, 0);
+        idx = head;
+        for (unsigned int i = 1; i < size; i++)
+        {
+            idx = DistributedAllocator::next(idx);
+            DistributedAllocator::write(idx, i);
+            std::cout << i << std::endl;
+        }
+        idx = head;
+        std::cout << "__________________________" << std::endl;
+        int val;
+        for (unsigned int i = 1; i < size; i++)
+        {
+            idx = DistributedAllocator::next(idx);
+            val = DistributedAllocator::read(idx);
+            std::cout << val << std::endl;
+        }
 
+    }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (DistributedAllocator::world_rank == 1) {
+    /*if (DistributedAllocator::world_rank == 1) {
         DistributedAllocator::read(0);
-    }
+    }*/
 
     DistributedAllocator::close();
     return 0;

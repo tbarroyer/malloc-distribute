@@ -22,7 +22,10 @@ namespace api {
         // allocate space for an integer
         // return id of the interger
         static int alloc(unsigned int size);
+
         static int alloc();
+
+        static int next(int id);
 
         // read in memory
         static int read(int id);
