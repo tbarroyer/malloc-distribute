@@ -259,6 +259,27 @@ namespace api {
         }
     }
 
+    int DistributedAllocator::alloc(unsigned int size) {
+        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
+        int ret_idx = alloc();
+        int first_idx = ret_idx;
+        if (first_idx == -1)
+            return first_idx;
+        int second_idx;
+        for (unsigned int i = 1; i < size; i++)
+        {
+            second_idx = alloc();
+            if (second_idx == -1)
+                break;
+            (*collection)[first_idx].first = second_idx;
+            std::cout << "Key " << first_idx << " with value "
+                << (*collection)[first_idx].second << " has next id "
+                << (*collection)[first_idx].first << std::endl;
+            first_idx = second_idx;
+        }
+        return ret_idx;
+    }
+
     int DistributedAllocator::alloc() {
         std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
         int alloc_idx = -1;
@@ -357,7 +378,8 @@ namespace api {
                 << " write " << world_rank << " value " << value
                 << std::endl;
 
-            (*collection)[id] = std::make_pair(-1, value);
+            //(*collection)[id] = std::make_pair(-1, value);
+            (*collection)[id].second = value;
 
             return true;
         }
