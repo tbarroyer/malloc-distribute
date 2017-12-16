@@ -1,5 +1,7 @@
 # pragma once
 
+#include <mpi.h>
+
 namespace api {
-    void foo();
+    void hello();
 }

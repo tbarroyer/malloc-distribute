@@ -3,6 +3,6 @@
 # include "api/api.hh"
 
 int main() {
-    api::foo();
+    api::hello();
     return 0;
 }
