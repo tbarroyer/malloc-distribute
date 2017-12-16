@@ -2,6 +2,7 @@
 
 # include <mpi.h>
 # include <cstddef>
+# include <map>
 
 namespace api {
     class DistributedAllocator {
@@ -24,5 +25,6 @@ namespace api {
 
     private:
         static unsigned int max_id;
+        static std::map<unsigned int, int> collection;
     };
 }

@@ -7,6 +7,7 @@ namespace api {
     int DistributedAllocator::world_size = 0;
     int DistributedAllocator::world_rank = 0;
     unsigned int DistributedAllocator::max_id = -1;
+    std::map<unsigned int, int> DistributedAllocator::collection = std::map<unsigned int, int>();
 
     void DistributedAllocator::init() {
         MPI_Init(NULL, NULL);
@@ -21,8 +22,11 @@ namespace api {
 
     unsigned int DistributedAllocator::alloc() {
         std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
-
         std::cout << "ID " << max_id << " given" << std::endl;
+
+        // allocate memory
+        collection[max_id] = 0;
+
         return max_id++;
     }
 }
