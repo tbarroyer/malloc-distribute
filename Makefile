@@ -1,31 +1,24 @@
-CC=g++
-CFLAGS=-W -Wall -ansi -pedantic -g
+CC=mpic++
+CFLAGS=-Wall -Wextra -Werror
 LDFLAGS=
 
-all: client server
+all: main
 
-client: obj/client/main.o
-	$(CC) -o client obj/client/main.o $(LDFLAGS)
+main: obj/main.o obj/api/api.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-server: obj/server/main.o
-	$(CC) -o server obj/server/main.o $(LDFLAGS)
+obj/main.o: src/main.cc obj
+	$(CC) -o $@ -c $< $(CFLAGS)
 
-obj/client/main.o: src/client/main.cc obj/client
-	$(CC) -o obj/client/main.o -c src/client/main.cc $(CFLAGS)
+obj/api/api.o: src/api/api.cc obj/api
+	$(CC) -o $@ -c $< $(CFLAGS)
 
-obj/server/main.o: src/server/main.cc obj/server
-	$(CC) -o obj/server/main.o -c src/server/main.cc $(CFLAGS)
-
-obj/client: obj
-	mkdir -p $@
-
-obj/server: obj
+obj/api: obj
 	mkdir -p $@
 
 obj:
 	mkdir -p $@
 
 clean:
-	rm -rf client
-	rm -rf server
+	rm -rf main
 	rm -rf obj

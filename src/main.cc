@@ -1,6 +1,8 @@
 # include <iostream>
 
+# include "api/api.hh"
+
 int main() {
-    std::cout << "Hello client" << std::endl;
+    api::foo();
     return 0;
 }
