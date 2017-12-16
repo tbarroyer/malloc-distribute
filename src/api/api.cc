@@ -2,9 +2,11 @@
 
 # include "api.hh"
 
-void api::hello() {
+void api::init() {
     MPI_Init(NULL, NULL);
+}
 
+void api::print() {
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     
@@ -19,5 +21,8 @@ void api::hello() {
            " out of %d processors\n",
            processor_name, world_rank, world_size);
 
+}
+
+void api::close() {
     MPI_Finalize();
 }

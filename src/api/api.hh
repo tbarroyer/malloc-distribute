@@ -3,5 +3,7 @@
 #include <mpi.h>
 
 namespace api {
-    void hello();
+    void init();
+    void print();
+    void close();
 }
