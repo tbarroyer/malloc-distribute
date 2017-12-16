@@ -17,6 +17,12 @@ namespace api {
         // return id of the interger
         static unsigned int alloc();
 
+        // read in memory
+        static int read(unsigned int id);
+
+    private:
+        static void loop();
+
     public:
         // Number of process
         static int world_size;
@@ -25,6 +31,6 @@ namespace api {
 
     private:
         static unsigned int max_id;
-        static std::map<unsigned int, int> collection;
+        static std::map<unsigned int, int>* collection;
     };
 }
