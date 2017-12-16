@@ -4,6 +4,9 @@ LDFLAGS=
 
 all: main
 
+check: main
+	mpirun main
+
 main: obj/main.o obj/api/api.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
