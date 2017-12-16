@@ -1,5 +1,5 @@
 CC=mpic++
-CFLAGS=-Wall -Wextra -Werror
+CFLAGS=-Wall -Wextra -Werror -g
 LDFLAGS=
 
 all: main

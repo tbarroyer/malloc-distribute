@@ -2,9 +2,10 @@
 
 # include "api/api.hh"
 
+using namespace api;
+
 int main() {
-    api::init();
-    api::print();
-    api::close();
+    DistributedAllocator::init();
+    DistributedAllocator::close();
     return 0;
 }
