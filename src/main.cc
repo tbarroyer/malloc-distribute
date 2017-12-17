@@ -10,17 +10,17 @@ int main() {
 
     // Process 0 ask for allocation
     if (DistributedAllocator::world_rank == 0) {
-        DistributedAllocator::alloc();  
+        DistributedAllocator::alloc();
     }
 
     // Process 2 ask for allocation
     if (DistributedAllocator::world_rank == 2) {
-        DistributedAllocator::alloc();  
+        DistributedAllocator::alloc();
     }
 
     // Process 3 ask for allocation
     if (DistributedAllocator::world_rank == 3) {
-        DistributedAllocator::alloc();  
+        DistributedAllocator::alloc();
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

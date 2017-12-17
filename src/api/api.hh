@@ -44,6 +44,7 @@ namespace api {
         static bool get_ready;
 
         static int max_id;
+        static int cur_id;
         static std::map<int, int>* collection;
 
         static std::queue<std::pair<int, int>>* send_value;

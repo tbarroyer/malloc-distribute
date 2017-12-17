@@ -11,26 +11,25 @@ namespace api {
     // ===========================
     // ===========================
     // ===========================
-    
     int DistributedAllocator::world_size = 0;
     int DistributedAllocator::world_rank = 0;
 
     int DistributedAllocator::max_id = -1;
+    int DistributedAllocator::cur_id = -1;
 
     int DistributedAllocator::buff_value = 0;
     bool DistributedAllocator::get_ready = false;
-    
     std::map<int, int>* DistributedAllocator::collection = new std::map<int, int>();
 
     std::thread DistributedAllocator::re = std::thread();
     std::thread DistributedAllocator::se = std::thread();
-        
+
     std::queue<std::pair<int, int>>* DistributedAllocator::send_value = new std::queue<std::pair<int, int>>();
     std::queue<std::pair<int, int>>* DistributedAllocator::send_key =   new std::queue<std::pair<int, int>>();
 
     std::queue<std::pair<int, std::pair<int, int>>>* DistributedAllocator::send_key_write =
         new std::queue<std::pair<int, std::pair<int, int>>>();
-        
+
     std::mutex DistributedAllocator::m;
     std::mutex DistributedAllocator::m_get;
 
@@ -44,7 +43,7 @@ namespace api {
     // ===========================
 
     void DistributedAllocator::loop_re() {
-        int* buf = (int*)malloc(2 * sizeof(int));
+        int* buf = (int*)malloc(2 * sizeof (int));
         MPI_Status status;
         while (1) {
 
@@ -125,7 +124,7 @@ namespace api {
                 pair_key_write = send_key_write->front();
 
                 // FIXME FREE
-                int* sent = (int*)malloc(2 * sizeof(int));
+                int* sent = (int*)malloc(2 * sizeof (int));
                 sent[0] = pair_key_write.second.first;
                 sent[1] = pair_key_write.second.second;
 
@@ -133,7 +132,7 @@ namespace api {
 
                 send_key_write->pop();
             }
-            
+
             if (pair.first == world_rank)
                 break;
         }
@@ -145,7 +144,8 @@ namespace api {
 
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        max_id = world_rank * (INT_MAX / world_size);
+        max_id = (world_rank + 1) * (INT_MAX / world_size);
+        cur_id = world_rank * (INT_MAX / world_size);
 
         re = std::thread(loop_re);
         se = std::thread(loop_se);
@@ -165,7 +165,7 @@ namespace api {
         delete collection;
         delete send_value;
         delete send_key;
-        
+
         MPI_Barrier(MPI_COMM_WORLD);
 
         MPI_Finalize();
@@ -173,12 +173,12 @@ namespace api {
 
     unsigned int DistributedAllocator::alloc() {
         std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
-        std::cout << "ID " << max_id << " given" << std::endl;
+        std::cout << "ID " << cur_id << " given" << std::endl;
 
         // allocate memory
-        (*collection)[max_id] = 42;
+        (*collection)[cur_id] = 42;
 
-        return max_id++;
+        return cur_id++;
     }
 
     int DistributedAllocator::read(int id) {
@@ -223,7 +223,7 @@ namespace api {
                       << std::endl;
 
             (*collection)[id] = value;
- 
+
             return true;
         }
 
