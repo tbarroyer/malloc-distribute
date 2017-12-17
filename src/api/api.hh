@@ -23,11 +23,11 @@ namespace api {
         static unsigned int alloc();
 
         // read in memory
-        static int read(unsigned int id);
+        static int read(int id);
 
 
         // write in memory
-        static bool write(unsigned int id, int value);
+        static bool write(int id, int value);
 
     private:
         static void loop_re();
@@ -43,11 +43,12 @@ namespace api {
         static int  buff_value;
         static bool get_ready;
 
-        static unsigned int max_id;
-        static std::map<unsigned int, int>* collection;
+        static int max_id;
+        static std::map<int, int>* collection;
 
         static std::queue<std::pair<int, int>>* send_value;
-        static std::queue<std::pair<int, unsigned int>>* send_key;
+        static std::queue<std::pair<int, int>>* send_key;
+        static std::queue<std::pair<int, std::pair<int, int>>>* send_key_write;
 
         static std::thread re;
         static std::thread se;
