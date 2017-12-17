@@ -4,6 +4,10 @@
 # include <cstddef>
 # include <map>
 # include <thread>
+# include <mutex>
+# include <queue>
+# include <utility>
+# include <condition_variable>
 
 namespace api {
     class DistributedAllocator {
@@ -22,7 +26,8 @@ namespace api {
         static int read(unsigned int id);
 
     private:
-        static void loop();
+        static void loop_re();
+        static void loop_se();
 
     public:
         // Number of process
@@ -33,6 +38,12 @@ namespace api {
     private:
         static unsigned int max_id;
         static std::map<unsigned int, int>* collection;
-        static std::thread responder;
+        static std::queue<std::pair<int, int>>* send_value;
+//        static std::queue<int>* send_key;
+        static std::thread re;
+        static std::thread se;
+
+        static std::mutex m;
+        static std::condition_variable cv;
     };
 }
