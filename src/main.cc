@@ -25,6 +25,12 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    if (DistributedAllocator::world_rank == 3) {
+         DistributedAllocator::write(3221225469, 19);
+     }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
     // Process 3 ask to read memory from process 3
     if (DistributedAllocator::world_rank == 3) {
         DistributedAllocator::read(3221225469);

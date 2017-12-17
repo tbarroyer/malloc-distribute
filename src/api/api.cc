@@ -8,6 +8,10 @@
 namespace api {
 
     // Initialize static variables
+    // ===========================
+    // ===========================
+    // ===========================
+    
     int DistributedAllocator::world_size = 0;
     int DistributedAllocator::world_rank = 0;
 
@@ -31,10 +35,18 @@ namespace api {
     std::condition_variable DistributedAllocator::cv;
     std::condition_variable DistributedAllocator::cv_get;
 
+
+    // Member definitions ========
+    // ===========================
+    // ===========================
+    // ===========================
+
     void DistributedAllocator::loop_re() {
         unsigned int buf;
         MPI_Status status;
         while (1) {
+
+            // Wait until it received something
             MPI_Recv(&buf, 1, MPI_UNSIGNED, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank)
             {
@@ -43,10 +55,13 @@ namespace api {
                 break;
             }
 
+            // Someone wants to access my memory
             if (status.MPI_TAG == 99) {
                 send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf]));
                 cv.notify_one();
             }
+
+            // Someone returns me its memory
             else if (status.MPI_TAG == 77) {
                 buff_value = buf;
                 get_ready = true;
@@ -73,7 +88,7 @@ namespace api {
 
                 if (pair.first == world_rank)
                     break;
-                
+
                 MPI_Isend(&(pair.second), 1, MPI_INT, pair.first, 77, MPI_COMM_WORLD, &request);
                 send_value->pop();
             }
@@ -151,12 +166,11 @@ namespace api {
         send_key->push(std::make_pair(process_id, id));
         cv.notify_one();
 
-        int out = -1;
-            
+        // Wait until my received thread get the result
         std::unique_lock<std::mutex> lk(m);
         cv_get.wait(lk, []{return get_ready;});
 
-        out = buff_value;
+        int out = buff_value;
         get_ready = false;
 
         std::cout << "Process " << process_id
@@ -164,5 +178,23 @@ namespace api {
                   << std::endl;
 
         return out;
+    }
+
+    bool DistributedAllocator::write(unsigned int id, int value) {
+        std::cout << "Process " << world_rank << " want to write" << std::endl;
+
+        int process_id = id / (UINT_MAX / world_size);
+
+        if (process_id == world_rank) {
+            std::cout << "Process " << process_id
+                      << " write " << world_rank << " value " << value
+                      << std::endl;
+
+            (*collection)[id] = value;
+ 
+            return true;
+        }
+
+        return false;
     }
 }

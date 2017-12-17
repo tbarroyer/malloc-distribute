@@ -25,6 +25,10 @@ namespace api {
         // read in memory
         static int read(unsigned int id);
 
+
+        // write in memory
+        static bool write(unsigned int id, int value);
+
     private:
         static void loop_re();
         static void loop_se();
