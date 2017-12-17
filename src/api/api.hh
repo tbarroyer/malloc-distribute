@@ -36,14 +36,22 @@ namespace api {
         static int world_rank;
 
     private:
+        static int  buff_value;
+        static bool get_ready;
+
         static unsigned int max_id;
         static std::map<unsigned int, int>* collection;
+
         static std::queue<std::pair<int, int>>* send_value;
-//        static std::queue<int>* send_key;
+        static std::queue<std::pair<int, unsigned int>>* send_key;
+
         static std::thread re;
         static std::thread se;
 
         static std::mutex m;
+        static std::mutex m_get;
+
         static std::condition_variable cv;
+        static std::condition_variable cv_get;
     };
 }
