@@ -20,7 +20,7 @@ namespace api {
 
         // allocate space for an integer
         // return id of the interger
-        static unsigned int alloc();
+        static int alloc();
 
         // read in memory
         static int read(int id);
@@ -49,6 +49,8 @@ namespace api {
 
         static std::queue<std::pair<int, int>>* send_value;
         static std::queue<std::pair<int, int>>* send_key;
+        static std::queue<std::pair<int, int>>* send_alloc_req;
+        static std::queue<std::pair<int, int>>* send_alloc_resp;
         static std::queue<std::pair<int, std::pair<int, int>>>* send_key_write;
 
         static std::thread re;

@@ -9,9 +9,10 @@ int main() {
     DistributedAllocator::init();
 
     // Process 0 ask for allocation
-    if (DistributedAllocator::world_rank == 0) {
-        DistributedAllocator::alloc();
-    }
+    /*if (DistributedAllocator::world_rank == 0) {
+        for (int i = 0; i < 11; i++)
+            DistributedAllocator::alloc();
+    }*/
 
     // Process 2 ask for allocation
     if (DistributedAllocator::world_rank == 2) {
