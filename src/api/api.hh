@@ -8,6 +8,7 @@
 # include <queue>
 # include <utility>
 # include <condition_variable>
+# include <vector>
 
 namespace api {
     class DistributedAllocator {
@@ -24,6 +25,10 @@ namespace api {
 
         // read in memory
         static int read(int id);
+
+
+        // free memory
+        static void free(int id);
 
 
         // write in memory
@@ -52,6 +57,8 @@ namespace api {
         static std::queue<std::pair<int, int>>* send_alloc_req;
         static std::queue<std::pair<int, int>>* send_alloc_resp;
         static std::queue<std::pair<int, std::pair<int, int>>>* send_key_write;
+
+        static std::vector<int>* free_disp;
 
         static std::thread re;
         static std::thread se;

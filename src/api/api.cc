@@ -39,6 +39,7 @@ namespace api {
     std::condition_variable DistributedAllocator::cv;
     std::condition_variable DistributedAllocator::cv_get;
 
+    std::vector<int>* DistributedAllocator::free_disp = new std::vector<int>();
 
     // Member definitions ========
     // ===========================
@@ -188,6 +189,7 @@ namespace api {
 
         re = std::thread(loop_re);
         se = std::thread(loop_se);
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     void DistributedAllocator::close() {
@@ -210,16 +212,34 @@ namespace api {
         MPI_Finalize();
     }
 
+
+    void DistributedAllocator::free(int id) {
+        std::cout << "Process " << world_rank << " want to free" << std::endl;
+        int process_id = id / (MAX_INT / world_size);
+
+        if (process_id == world_rank) {
+            free_disp->push_back(id);
+        }
+    }
+
     int DistributedAllocator::alloc() {
         std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
         int alloc_idx = -1;
         // allocate memory
         if (cur_id < max_id)
         {
-            std::cout << "ID " << cur_id << " given" << std::endl;
-            (*collection)[cur_id] = std::make_pair(-1, 42);
-            alloc_idx = cur_id;
-            cur_id++;
+            if (free_disp->empty()) {
+                std::cout << "ID " << cur_id << " given" << std::endl;
+                (*collection)[cur_id] = std::make_pair(-1, 42);
+                alloc_idx = cur_id;
+                cur_id++;
+            }
+            else {
+                alloc_idx = free_disp->back();
+                std::cout << "ID " << alloc_idx << " given" << std::endl;
+                (*collection)[alloc_idx] = std::make_pair(-1, 42);
+                free_disp->pop_back();
+            }
         }
         else
         {
