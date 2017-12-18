@@ -38,6 +38,9 @@ namespace api {
         // write in memory
         static bool write(int id, int value);
 
+        // write a Table in memory
+        static bool write(int id, int* vals,unsigned int size);
+
     private:
         static void loop_re();
         static void loop_se();

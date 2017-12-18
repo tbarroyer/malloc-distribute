@@ -254,7 +254,7 @@ namespace api {
 
         if (process_id == world_rank) {
             free_disp->push_back(id);
-            //BEBGIN HAMZA
+            //BEGIN HAMZA
             //free all the nexts ids
             int next_id =(*collection)[id].first;
             while((next_id != -1) && ((next_id/ (MAX_INT / world_size)) == world_rank) )
@@ -430,4 +430,29 @@ namespace api {
 
         return out;
     }
+    //BEGIN HAMZA
+
+      bool DistributedAllocator::write(int id, int* vals, unsigned int size)
+      {
+        bool ret = true ;
+        unsigned int i = 0 ;
+        int next_id = id ;
+        while ((i < size) && (next_id != -1))
+        {
+          ret = ret && write(next_id, *(vals + i));
+          next_id = next(next_id);
+          i++;
+        }
+        if ((i != size) && (next_id == -1))
+        {
+          std::cout  << "Process " << world_rank
+             << " not enought memory allocated to write all the data "
+             << std::endl;
+          return false;
+        }
+        return ret;
+
+      }
+
+    //END HAMZA
 }
