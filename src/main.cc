@@ -30,13 +30,17 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (DistributedAllocator::world_rank == 0) {
+    if (DistributedAllocator::world_rank == 1) {
         DistributedAllocator::free(0);
     }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (DistributedAllocator::world_rank == 0) {
         DistributedAllocator::alloc();
     }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (DistributedAllocator::world_rank == 0) {
         DistributedAllocator::read(0);

@@ -26,6 +26,8 @@ namespace api {
     std::thread DistributedAllocator::se = std::thread();
 
     std::queue<std::pair<int, int>>* DistributedAllocator::send_value = new std::queue<std::pair<int, int>>();
+    std::queue<std::pair<int, int>>* DistributedAllocator::send_free = new std::queue<std::pair<int, int>>();
+    std::queue<std::pair<int, int>>* DistributedAllocator::ret_free = new std::queue<std::pair<int, int>>();
     std::queue<std::pair<int, int>>* DistributedAllocator::send_key =   new std::queue<std::pair<int, int>>();
     std::queue<std::pair<int, int>>* DistributedAllocator::send_alloc_req =  new std::queue<std::pair<int, int>>();
     std::queue<std::pair<int, int>>* DistributedAllocator::send_alloc_resp = new std::queue<std::pair<int, int>>();
@@ -80,6 +82,18 @@ namespace api {
                 cv_get.notify_one();
             }
 
+            else if (status.MPI_TAG == 33) {
+                buff_value = buf[0];
+                get_ready = true;
+                cv_get.notify_one();
+            }
+
+            else if (status.MPI_TAG == 11) {
+                free_disp->push_back(buf[0]);
+                ret_free->push(std::make_pair(status.MPI_SOURCE, 1));
+                cv.notify_one();
+            }
+
             // Someone want to change my memory
             else if (status.MPI_TAG == 88) {
                 (*collection)[buf[0]] = std::make_pair((*collection)[buf[0]].first, buf[1]);
@@ -113,7 +127,8 @@ namespace api {
 
             // Wait until a send is needed
             std::unique_lock<std::mutex> lk(m);
-            cv.wait(lk, []{return !send_value->empty() || !send_key->empty() ||!send_key_write->empty() || !send_alloc_req->empty() || !send_alloc_resp->empty();});
+            cv.wait(lk, []{return !send_value->empty() || !send_key->empty() ||!send_key_write->empty() || !send_alloc_req->empty() || !send_alloc_resp->empty()
+                               || !send_free->empty() || !ret_free->empty();});
 
             std::pair<int, int> pair = std::make_pair(-1, -1);
             std::pair<int, int> pair_key = std::make_pair(-1, 0);
@@ -169,8 +184,22 @@ namespace api {
                 pair_alloc_resp = send_alloc_resp->front();
                 MPI_Isend(&(pair_alloc_resp.second), 1, MPI_INT, pair_alloc_resp.first, 22, MPI_COMM_WORLD, &request);
                 send_alloc_resp->pop();
-
             }
+
+            while (!send_free->empty())
+            {
+                pair_key = send_free->front();
+                MPI_Isend(&(pair_key.second), 1, MPI_INT, pair_key.first, 11, MPI_COMM_WORLD, &request);
+                send_free->pop();
+            }
+
+            while (!ret_free->empty())
+            {
+                pair_key = ret_free->front();
+                MPI_Isend(&(pair_key.second), 1, MPI_INT, pair_key.first, 33, MPI_COMM_WORLD, &request);
+                ret_free->pop();
+            }
+
             if (pair.first == world_rank)
                 break;
         }
@@ -219,6 +248,13 @@ namespace api {
 
         if (process_id == world_rank) {
             free_disp->push_back(id);
+        }
+        else {
+            send_free->push(std::make_pair(process_id, id));
+            cv.notify_one();
+
+            std::unique_lock<std::mutex> lk(m);
+            cv_get.wait(lk, []{return get_ready;});
         }
     }
 

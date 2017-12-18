@@ -53,6 +53,8 @@ namespace api {
         static std::map<int, std::pair<int, int>>* collection;
 
         static std::queue<std::pair<int, int>>* send_value;
+        static std::queue<std::pair<int, int>>* send_free;
+        static std::queue<std::pair<int, int>>* ret_free;
         static std::queue<std::pair<int, int>>* send_key;
         static std::queue<std::pair<int, int>>* send_alloc_req;
         static std::queue<std::pair<int, int>>* send_alloc_resp;
