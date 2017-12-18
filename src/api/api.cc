@@ -254,6 +254,25 @@ namespace api {
 
         if (process_id == world_rank) {
             free_disp->push_back(id);
+            //BEBGIN HAMZA
+            //free all the nexts ids
+            int next_id =(*collection)[id].first;
+            while((next_id != -1) && ((next_id/ (MAX_INT / world_size)) == world_rank) )
+            {
+              free_disp->push_back(next_id);
+              next_id =(*collection)[next_id].first;
+            }
+            //if exited the loop because next_id is not in the current process
+            if(next_id != -1)
+            {
+                send_free->push(std::make_pair(process_id, id));
+                cv.notify_one();
+
+                std::unique_lock<std::mutex> lk(m);
+                cv_get.wait(lk, []{return get_ready;});
+                get_ready = false;
+            }
+            //END HAMZA
         }
         else {
             send_free->push(std::make_pair(process_id, id));
