@@ -1,7 +1,8 @@
 CC=mpic++
-CFLAGS=-Wall -Wextra -Werror -g
+CFLAGS=-Wall -Wextra -Werror -g -std=c++11
 LDFLAGS=
-
+SRC2= src/main.cc src/api/api2.cc
+OBJ2 = $(SRC2:.c=.o)
 all: main
 
 check: main
@@ -21,6 +22,10 @@ obj/api: obj
 
 obj:
 	mkdir -p $@
+
+main2: $(OBJ2)
+	$(CC) -o $@ $^ $(CFLAGS)
+
 
 clean:
 	rm -rf main
