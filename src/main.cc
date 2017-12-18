@@ -35,7 +35,7 @@ int main() {
     if (DistributedAllocator::world_rank == 1) {
         DistributedAllocator::alloc();
     }*/
-    int head;
+    /*int head;
     int idx;
     unsigned int size = 10;
     if (DistributedAllocator::world_rank == 0) {
@@ -59,7 +59,7 @@ int main() {
         }
 
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);*/
 
     /*if (DistributedAllocator::world_rank == 1) {
         DistributedAllocator::read(0);

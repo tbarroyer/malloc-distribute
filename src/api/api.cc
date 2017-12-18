@@ -52,11 +52,11 @@ namespace api {
         int* buf = (int*)malloc(2 * sizeof (int));
         MPI_Status status;
         while (1) {
-
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank) {
                 send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]].second));
+                std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
                 break;
             }
@@ -142,7 +142,9 @@ namespace api {
                 pair = send_value->front();
 
                 if (pair.first == world_rank)
+                {
                     break;
+                }
 
                 MPI_Isend(&(pair.second), 1, MPI_INT, pair.first, 77, MPI_COMM_WORLD, &request);
                 send_value->pop();
@@ -201,12 +203,14 @@ namespace api {
             }
 
             if (pair.first == world_rank)
+            {
                 break;
+            }
         }
     }
 
     void DistributedAllocator::init() {
-        int provided ;
+        int provided;
         MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
 
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -229,6 +233,8 @@ namespace api {
         MPI_Request request;
         MPI_Isend(&toto, 1, MPI_INT, world_rank, 0, MPI_COMM_WORLD, &request);
 
+        re.native_handle();
+        se.native_handle();
         re.join();
         se.join();
 
