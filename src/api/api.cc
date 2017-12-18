@@ -255,6 +255,7 @@ namespace api {
 
             std::unique_lock<std::mutex> lk(m);
             cv_get.wait(lk, []{return get_ready;});
+            get_ready = false;
         }
     }
 
