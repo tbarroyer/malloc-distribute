@@ -20,7 +20,7 @@ namespace api {
 
     int DistributedAllocator::buff_value = 0;
     bool DistributedAllocator::get_ready = false;
-    std::map<int, int>* DistributedAllocator::collection = new std::map<int, int>();
+    std::map<int, std::pair<int, int>>* DistributedAllocator::collection = new std::map<int, std::pair<int, int>>();
 
     std::thread DistributedAllocator::re = std::thread();
     std::thread DistributedAllocator::se = std::thread();
@@ -53,7 +53,7 @@ namespace api {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank) {
-                send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]]));
+                send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]].second));
                 cv.notify_one();
                 break;
             }
@@ -61,7 +61,7 @@ namespace api {
             // Someone wants to access my memory
             if (status.MPI_TAG == 99) {
                 if (buf[0] != -1) {
-                    send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]]));
+                    send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]].second));
                     cv.notify_one();
                 }
                 else if (buf[0] == -1) {
@@ -81,7 +81,7 @@ namespace api {
 
             // Someone want to change my memory
             else if (status.MPI_TAG == 88) {
-                (*collection)[buf[0]] = buf[1];
+                (*collection)[buf[0]] = std::make_pair((*collection)[buf[0]].first, buf[1]);
                 send_key->push(std::make_pair(status.MPI_SOURCE, -1));
                 cv.notify_one();
             }
@@ -89,7 +89,7 @@ namespace api {
             else if (status.MPI_TAG == 66) {
                 if (cur_id < max_id)
                 {
-                    (*collection)[cur_id] = 42;
+                    (*collection)[cur_id] = std::make_pair(-1, 42);
                     send_alloc_resp->push(std::make_pair(status.MPI_SOURCE, cur_id));
                     cur_id++;
                 }
@@ -217,7 +217,7 @@ namespace api {
         if (cur_id < max_id)
         {
             std::cout << "ID " << cur_id << " given" << std::endl;
-            (*collection)[cur_id] = 42;
+            (*collection)[cur_id] = std::make_pair(-1, 42);
             alloc_idx = cur_id;
             cur_id++;
         }
@@ -267,10 +267,10 @@ namespace api {
         if (process_id == world_rank)
         {
             std::cout << "Process " << process_id
-                << " gave " << world_rank << " value " << (*collection)[id]
+                << " gave " << world_rank << " value " << (*collection)[id].second
                 << std::endl;
 
-            return (*collection)[id];
+            return (*collection)[id].second;
         }
 
         send_key->push(std::make_pair(process_id, id));
@@ -300,7 +300,7 @@ namespace api {
                 << " write " << world_rank << " value " << value
                 << std::endl;
 
-            (*collection)[id] = value;
+            (*collection)[id] = std::make_pair(-1, value);
 
             return true;
         }
