@@ -86,7 +86,7 @@ namespace api {
             }
             // Someone want to alloc my memory
             else if (status.MPI_TAG == 66) {
-                if (cur_id < max_id)
+                if (cur_id < max_id || !free_disp->empty())
                 {
                     int out = alloc();
 
@@ -185,9 +185,8 @@ namespace api {
 
     void DistributedAllocator::free(int id) {
 //        std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
-        int process_id = id / (MAX_INT / world_size);;
+        int process_id = id / (MAX_INT / world_size);
         //int next_id =(*collection)[id].first;
-
         while (id != -1 && process_id == world_rank)
         {
 //            std::cout << "Process " << world_rank << " freed id " << id << " on his memory" << std::endl;
@@ -199,7 +198,6 @@ namespace api {
             process_id = id / (MAX_INT / world_size);
 //            std::cout << "Next id: " << id << std::endl;
         }
-
         if (id != -1)
         {
             Message msg = {process_id, 11, {id, -1}};
