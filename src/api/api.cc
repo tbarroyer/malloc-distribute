@@ -55,20 +55,14 @@ namespace api {
 
             // Someone wants to access my memory
             if (status.MPI_TAG == 99) {
-                if (buf[0] != -1) {
-                    Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
-                    send_queue->push(m);
+                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
+                send_queue->push(m);
 
-                    cv.notify_one();
-                }
-                else if (buf[0] == -1) {
-                    get_ready = true;
-                    buff_value = 1;
-                    cv_get.notify_one();
-                }
+                cv.notify_one();
             }
 
-            else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22) {
+            else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
+                     status.MPI_TAG == 76) {
                 buff_value = buf[0];
                 get_ready = true;
                 cv_get.notify_one();
@@ -86,7 +80,7 @@ namespace api {
             // Someone want to change my memory
             else if (status.MPI_TAG == 88) {
                 (*collection)[buf[0]] = std::make_pair((*collection)[buf[0]].first, buf[1]);
-                Message m = {status.MPI_SOURCE, 99, {-1, -1}};
+                Message m = {status.MPI_SOURCE, 76, {-1, -1}};
                 send_queue->push(m);
 
                 cv.notify_one();
