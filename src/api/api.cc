@@ -62,21 +62,13 @@ namespace api {
                     cv.notify_one();
                 }
                 else if (buf[0] == -1) {
-                    cv_get.notify_one();
                     get_ready = true;
                     buff_value = 1;
                     cv_get.notify_one();
                 }
             }
 
-            // Someone returns me its memory
-            else if (status.MPI_TAG == 77) {
-                buff_value = buf[0];
-                get_ready = true;
-                cv_get.notify_one();
-            }
-
-            else if (status.MPI_TAG == 33) {
+            else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22) {
                 buff_value = buf[0];
                 get_ready = true;
                 cv_get.notify_one();
@@ -116,12 +108,6 @@ namespace api {
                 }
 
                 cv.notify_one();
-            }
-            // Someone returns me the id of the alloc I asked for
-            else if (status.MPI_TAG == 22) {
-                buff_value = buf[0];
-                get_ready = true;
-                cv_get.notify_one();
             }
         }
     }
@@ -317,6 +303,9 @@ namespace api {
 
             return (*collection)[id].second;
         }
+
+        Message msg = {process_id, 99, {id, -1}};
+        send_queue->push(msg);
 
         cv.notify_one();
 
