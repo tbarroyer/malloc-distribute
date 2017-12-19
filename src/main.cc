@@ -19,6 +19,7 @@ int main() {
             DistributedAllocator::write(idx, idx * 10);
             idx = DistributedAllocator::next(idx);
         }
+
         idx = head;
         int val = -1;
         for (int i = 0; i < 10; i++)
@@ -27,7 +28,6 @@ int main() {
             std::cout << "Index is: " << idx << " and value is " << val << std::endl;
             idx = DistributedAllocator::next(idx);
         }
-
     }
 
     DistributedAllocator::close();

@@ -2,6 +2,7 @@
 # include <climits>
 # include <thread>
 # include <unistd.h>
+# include <chrono>
 
 # include "api.hh"
 # define MAX_INT 10
@@ -124,7 +125,7 @@ namespace api {
 
             // Wait until a send is needed
             std::unique_lock<std::mutex> lk(m);
-            cv.wait(lk, []{return !send_queue->empty();});
+            cv.wait_for(lk, std::chrono::milliseconds(100),  []{return !send_queue->empty();});
 
             Message msg;
 
@@ -138,7 +139,6 @@ namespace api {
 
                 if (msg.process_id == world_rank && msg.tag == 4)
                 {
-//                    std::cout << "Send thread break" << std::endl;
                     break;
                 }
             }
@@ -169,8 +169,6 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
-//        std::cout << "WAIT QUIT " << world_rank << "\n";
-
         MPI_Barrier(MPI_COMM_WORLD);
 
         Message msg = {world_rank, 4, {-1, -1}};
@@ -184,8 +182,6 @@ namespace api {
         delete send_queue;
 
         MPI_Barrier(MPI_COMM_WORLD);
-
- //       std::cout << "QUIT " << world_rank << "\n";
 
         MPI_Finalize();
     }
@@ -212,7 +208,7 @@ namespace api {
             send_queue->push(msg);
             cv.notify_one();
 
-            std::unique_lock<std::mutex> lk(m);
+            std::unique_lock<std::mutex> lk(m_get);
             cv_get.wait(lk, []{return get_ready;});
             get_ready = false;
         }
@@ -252,7 +248,7 @@ namespace api {
           cv.notify_one();
 
         // Wait until my received thread get the result
-          std::unique_lock<std::mutex> lk(m);
+          std::unique_lock<std::mutex> lk(m_get);
           cv_get.wait(lk, []{return get_ready;});
 
           int out = buff_value;
@@ -296,7 +292,7 @@ namespace api {
                 cv.notify_one();
 
                 // Wait until my received thread get the result
-                std::unique_lock<std::mutex> lk(m);
+                std::unique_lock<std::mutex> lk(m_get);
                 cv_get.wait(lk, []{return get_ready;});
 
                 int out = buff_value;
@@ -342,7 +338,7 @@ namespace api {
         cv.notify_one();
 
         // Wait until my received thread get the result
-        std::unique_lock<std::mutex> lk(m);
+        std::unique_lock<std::mutex> lk(m_get);
         cv_get.wait(lk, []{return get_ready;});
 
         int out = buff_value;
@@ -368,7 +364,7 @@ namespace api {
             cv.notify_one();
 
             // Wait until my received thread get the result
-            std::unique_lock<std::mutex> lk(m);
+            std::unique_lock<std::mutex> lk(m_get);
             cv_get.wait(lk, []{return get_ready;});
 
             int out = buff_value;
@@ -397,7 +393,7 @@ namespace api {
         cv.notify_one();
 
         // Wait until my received thread get the result
-        std::unique_lock<std::mutex> lk(m);
+        std::unique_lock<std::mutex> lk(m_get);
         cv_get.wait(lk, []{return get_ready;});
 
         bool out = (bool)buff_value;
