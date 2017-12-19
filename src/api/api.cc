@@ -181,11 +181,7 @@ namespace api {
         delete collection;
         delete send_queue;
 
-        std::cout << "KO " << world_rank << std::endl;
-
         MPI_Barrier(MPI_COMM_WORLD);
-        
-        std::cout << "OK " << world_rank << std::endl;
         
         MPI_Finalize();
     }
@@ -430,5 +426,16 @@ namespace api {
             return false;
         }
         return ret;
+    }
+
+    int DistributedAllocator::at(int head, int index)
+    {
+        int idx = head;
+        for (int i = 0; i < index; ++i)
+        {
+            idx = next(idx);
+        }
+
+        return DistributedAllocator::read(idx);
     }
 }

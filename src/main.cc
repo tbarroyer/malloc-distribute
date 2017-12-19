@@ -15,7 +15,6 @@ int main() {
     {
         int head = DistributedAllocator::alloc(SIZE);
 
-        MPI_Barrier(MPI_COMM_WORLD);
         int idx = head;
         for (int i = 0; i < SIZE; i++)
         {
@@ -26,15 +25,13 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (DistributedAllocator::world_rank == 4)
+    if (DistributedAllocator::world_rank == 0)
     {
-        int idx = 0;
-        int val = -1;
+        int head = 0;
         for (int i = 0; i < SIZE; i++)
         {
-            val = DistributedAllocator::read(idx);
-            std::cout << "Index is: " << idx << " and value is " << val << std::endl;
-            idx = DistributedAllocator::next(idx);
+            int val = DistributedAllocator::at(head, i);
+            std::cout << "Index is: " << i << " and value is " << val << std::endl;
         }
     }
     

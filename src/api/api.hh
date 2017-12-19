@@ -37,6 +37,7 @@ namespace api {
         // read in memory
         static int read(int id);
 
+        static int at(int head, int index);
 
         // free memory
         static void free(int id);
