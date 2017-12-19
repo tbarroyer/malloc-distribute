@@ -46,12 +46,12 @@ namespace api {
         while (1) {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            if (status.MPI_SOURCE == world_rank) {
+            if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
                 Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
                 send_queue->push(m);
 
-                std::cout << "Receive thread break" << std::endl;
+                //std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
                 break;
             }
@@ -146,7 +146,7 @@ namespace api {
 
                 if (msg.process_id == world_rank)
                 {
-                    std::cout << "Send thread break" << std::endl;
+                    //std::cout << "Send thread break" << std::endl;
                     break;
                 }
 
@@ -180,6 +180,8 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
+        std::cout << "WAIT QUIT " << world_rank << "\n";
+
         MPI_Barrier(MPI_COMM_WORLD);
 
         std::cout << "QUIT " << world_rank << "\n";
@@ -187,7 +189,7 @@ namespace api {
         int toto;
 
         MPI_Request request;
-        MPI_Isend(&toto, 1, MPI_INT, world_rank, 0, MPI_COMM_WORLD, &request);
+        MPI_Isend(&toto, 1, MPI_INT, world_rank, 4, MPI_COMM_WORLD, &request);
 
         re.native_handle();
         se.native_handle();
