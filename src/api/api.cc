@@ -48,10 +48,7 @@ namespace api {
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
-                Message m = {status.MPI_SOURCE, 4, {(*collection)[buf[0]].second, -1}};
-                send_queue->push(m);
-
-                //std::cout << "Receive thread break" << std::endl;
+                std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
                 break;
             }
@@ -149,7 +146,7 @@ namespace api {
 
                 if (msg.process_id == world_rank && msg.tag == 4)
                 {
-                    //std::cout << "Send thread break" << std::endl;
+                    std::cout << "Send thread break" << std::endl;
                     break;
                 }
             }
@@ -184,8 +181,6 @@ namespace api {
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        std::cout << "QUIT " << world_rank << "\n";
-
         Message msg = {world_rank, 4, {-1, -1}};
         send_queue->push(msg);
         cv.notify_one();
@@ -197,6 +192,8 @@ namespace api {
         delete send_queue;
 
         MPI_Barrier(MPI_COMM_WORLD);
+
+        std::cout << "QUIT " << world_rank << "\n";
 
         MPI_Finalize();
     }
@@ -352,7 +349,6 @@ namespace api {
                 << " write " << world_rank << " value " << value
                 << std::endl;
 
-            //(*collection)[id] = std::make_pair(-1, value);
             (*collection)[id].second = value;
 
             return true;
@@ -376,7 +372,7 @@ namespace api {
 
     bool DistributedAllocator::write(int id, int* vals, unsigned int size)
     {
-        bool ret = true ;
+        bool ret = true;
         unsigned int i = 0 ;
         int next_id = id ;
         while ((i < size) && (next_id != -1))
@@ -385,15 +381,14 @@ namespace api {
             next_id = next(next_id);
             i++;
         }
+
         if ((i != size) && (next_id == -1))
         {
             std::cout  << "Process " << world_rank
-                << " not enought memory allocated to write all the data "
-                << std::endl;
+                       << " not enought memory allocated to write all the data "
+                       << std::endl;
             return false;
         }
         return ret;
-
     }
-
 }
