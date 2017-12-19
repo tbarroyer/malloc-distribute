@@ -48,7 +48,7 @@ namespace api {
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
-                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
+                Message m = {status.MPI_SOURCE, 4, {(*collection)[buf[0]].second, -1}};
                 send_queue->push(m);
 
                 //std::cout << "Receive thread break" << std::endl;
@@ -144,17 +144,17 @@ namespace api {
             {
                 msg = send_queue->front();
 
-                if (msg.process_id == world_rank)
+                MPI_Isend(&(msg.data), 2, MPI_INT, msg.process_id, msg.tag, MPI_COMM_WORLD, &request);
+                send_queue->pop();
+
+                if (msg.process_id == world_rank && msg.tag == 4)
                 {
                     //std::cout << "Send thread break" << std::endl;
                     break;
                 }
-
-                MPI_Isend(&(msg.data), 2, MPI_INT, msg.process_id, msg.tag, MPI_COMM_WORLD, &request);
-                send_queue->pop();
             }
 
-            if (msg.process_id == world_rank)
+            if (msg.process_id == world_rank && msg.tag == 4)
             {
                 break;
             }
@@ -191,8 +191,6 @@ namespace api {
         MPI_Request request;
         MPI_Isend(&toto, 1, MPI_INT, world_rank, 4, MPI_COMM_WORLD, &request);
 
-        re.native_handle();
-        se.native_handle();
         re.join();
         se.join();
 
