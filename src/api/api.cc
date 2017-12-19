@@ -46,10 +46,7 @@ namespace api {
         while (1) {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            if (status.MPI_SOURCE == world_rank) {
-
-                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
-                send_queue->push(m);
+            if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
                 std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
@@ -58,28 +55,14 @@ namespace api {
 
             // Someone wants to access my memory
             if (status.MPI_TAG == 99) {
-                if (buf[0] != -1) {
-                    Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
-                    send_queue->push(m);
+                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
+                send_queue->push(m);
 
-                    cv.notify_one();
-                }
-                else if (buf[0] == -1) {
-                    cv_get.notify_one();
-                    get_ready = true;
-                    buff_value = 1;
-                    cv_get.notify_one();
-                }
+                cv.notify_one();
             }
 
-            // Someone returns me its memory
-            else if (status.MPI_TAG == 77) {
-                buff_value = buf[0];
-                get_ready = true;
-                cv_get.notify_one();
-            }
-
-            else if (status.MPI_TAG == 33) {
+            else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
+                     status.MPI_TAG == 76) {
                 buff_value = buf[0];
                 get_ready = true;
                 cv_get.notify_one();
@@ -97,7 +80,7 @@ namespace api {
             // Someone want to change my memory
             else if (status.MPI_TAG == 88) {
                 (*collection)[buf[0]] = std::make_pair((*collection)[buf[0]].first, buf[1]);
-                Message m = {status.MPI_SOURCE, 99, {-1, -1}};
+                Message m = {status.MPI_SOURCE, 76, {-1, -1}};
                 send_queue->push(m);
 
                 cv.notify_one();
@@ -120,12 +103,6 @@ namespace api {
 
                 cv.notify_one();
             }
-            // Someone returns me the id of the alloc I asked for
-            else if (status.MPI_TAG == 22) {
-                buff_value = buf[0];
-                get_ready = true;
-                cv_get.notify_one();
-            }
         }
     }
 
@@ -144,17 +121,17 @@ namespace api {
             {
                 msg = send_queue->front();
 
-                if (msg.process_id == world_rank)
+                MPI_Isend(&(msg.data), 2, MPI_INT, msg.process_id, msg.tag, MPI_COMM_WORLD, &request);
+                send_queue->pop();
+
+                if (msg.process_id == world_rank && msg.tag == 4)
                 {
                     std::cout << "Send thread break" << std::endl;
                     break;
                 }
-
-                MPI_Isend(&(msg.data), 2, MPI_INT, msg.process_id, msg.tag, MPI_COMM_WORLD, &request);
-                send_queue->pop();
             }
 
-            if (msg.process_id == world_rank)
+            if (msg.process_id == world_rank && msg.tag == 4)
             {
                 break;
             }
@@ -180,17 +157,14 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
+        std::cout << "WAIT QUIT " << world_rank << "\n";
+
         MPI_Barrier(MPI_COMM_WORLD);
 
-        std::cout << "QUIT " << world_rank << "\n";
+        Message msg = {world_rank, 4, {-1, -1}};
+        send_queue->push(msg);
+        cv.notify_one();
 
-        int toto;
-
-        MPI_Request request;
-        MPI_Isend(&toto, 1, MPI_INT, world_rank, 0, MPI_COMM_WORLD, &request);
-
-        re.native_handle();
-        se.native_handle();
         re.join();
         se.join();
 
@@ -198,6 +172,8 @@ namespace api {
         delete send_queue;
 
         MPI_Barrier(MPI_COMM_WORLD);
+
+        std::cout << "QUIT " << world_rank << "\n";
 
         MPI_Finalize();
     }
@@ -322,6 +298,9 @@ namespace api {
             return (*collection)[id].second;
         }
 
+        Message msg = {process_id, 99, {id, -1}};
+        send_queue->push(msg);
+
         cv.notify_one();
 
         // Wait until my received thread get the result
@@ -353,7 +332,6 @@ namespace api {
                 << " write " << world_rank << " value " << value
                 << std::endl;
 
-            //(*collection)[id] = std::make_pair(-1, value);
             (*collection)[id].second = value;
 
             return true;
@@ -377,7 +355,7 @@ namespace api {
 
     bool DistributedAllocator::write(int id, int* vals, unsigned int size)
     {
-        bool ret = true ;
+        bool ret = true;
         unsigned int i = 0 ;
         int next_id = id ;
         while ((i < size) && (next_id != -1))
@@ -386,15 +364,14 @@ namespace api {
             next_id = next(next_id);
             i++;
         }
+
         if ((i != size) && (next_id == -1))
         {
             std::cout  << "Process " << world_rank
-                << " not enought memory allocated to write all the data "
-                << std::endl;
+                       << " not enought memory allocated to write all the data "
+                       << std::endl;
             return false;
         }
         return ret;
-
     }
-
 }
