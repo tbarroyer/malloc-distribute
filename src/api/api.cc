@@ -4,7 +4,7 @@
 # include <unistd.h>
 
 # include "api.hh"
-# define MAX_INT 15
+# define MAX_INT 10
 //# define MAX_INT INT_MAX
 namespace api {
 
@@ -260,6 +260,7 @@ namespace api {
             process_id = id / (MAX_INT / world_size);
             free_disp->push(id);
             id = (*collection)[id].first;
+            std::cout << "Next id: " << id << std::endl;
         }
 
         if (id != -1)
@@ -274,173 +275,172 @@ namespace api {
     }
 
 
-int DistributedAllocator::alloc(unsigned int size) {
-    std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
-    int ret_idx = alloc();
-    int first_idx = ret_idx;
-    if (first_idx == -1)
-        return first_idx;
-    int second_idx;
-    for (unsigned int i = 1; i < size; i++)
-    {
-        second_idx = alloc();
-        if (second_idx == -1)
-            break;
-        (*collection)[first_idx].first = second_idx;
-        std::cout << "Key " << first_idx << " with value "
-            << (*collection)[first_idx].second << " has next id "
-            << (*collection)[first_idx].first << std::endl;
-        first_idx = second_idx;
+    int DistributedAllocator::alloc(unsigned int size) {
+        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
+        int ret_idx = alloc();
+        int first_idx = ret_idx;
+        if (first_idx == -1)
+            return first_idx;
+        int second_idx;
+        for (unsigned int i = 1; i < size; i++)
+        {
+            second_idx = alloc();
+            if (second_idx == -1)
+                break;
+            (*collection)[first_idx].first = second_idx;
+            std::cout << "Key " << first_idx << " with value "
+                << (*collection)[first_idx].second << " has next id "
+                << (*collection)[first_idx].first << std::endl;
+            first_idx = second_idx;
+        }
+        return ret_idx;
     }
-    return ret_idx;
-}
 
-int DistributedAllocator::alloc() {
-    std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
-    int alloc_idx = -1;
-    // allocate memory
-    if (cur_id < max_id)
-    {
-        if (free_disp->empty()) {
+    int DistributedAllocator::alloc() {
+        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
+        int alloc_idx = -1;
+        // allocate memory
+        if (!free_disp->empty()) {
+            alloc_idx = free_disp->front();
+            std::cout << "ID " << alloc_idx << " given" << std::endl;
+            (*collection)[alloc_idx] = std::make_pair(-1, 42);
+            free_disp->pop();
+            return alloc_idx;
+        }
+        if (cur_id < max_id)
+        {
             std::cout << "ID " << cur_id << " given" << std::endl;
             (*collection)[cur_id] = std::make_pair(-1, 42);
             alloc_idx = cur_id;
             cur_id++;
         }
-        else {
-            alloc_idx = free_disp->front();
-            std::cout << "ID " << alloc_idx << " given" << std::endl;
-            (*collection)[alloc_idx] = std::make_pair(-1, 42);
-            free_disp->pop();
-        }
-    }
-    else
-    {
-        // send alloc_queue
-        for (int i = 0; i < world_size; i++)
+        else
         {
-            if (i == world_rank)
-                continue;
-
-            send_alloc_req->push(std::make_pair(i, i));
-            cv.notify_one();
-
-            // Wait until my received thread get the result
-            std::unique_lock<std::mutex> lk(m);
-            cv_get.wait(lk, []{return get_ready;});
-
-            int out = buff_value;
-            get_ready = false;
-
-            std::cout << "Process " << world_rank
-                << " asking Process " << i << " to allocate memory"
-                << std::endl;
-            if (!(out == -1))
+            // send alloc_queue
+            for (int i = 0; i < world_size; i++)
             {
-                std::cout << "Answer of Process " << i
-                    << " to allocate memory asked from Process "
-                    << world_rank << " is yes and ID is " << buff_value << std::endl;
-                alloc_idx = buff_value;
-                break;
+                if (i == world_rank)
+                    continue;
+
+                send_alloc_req->push(std::make_pair(i, i));
+                cv.notify_one();
+
+                // Wait until my received thread get the result
+                std::unique_lock<std::mutex> lk(m);
+                cv_get.wait(lk, []{return get_ready;});
+
+                int out = buff_value;
+                get_ready = false;
+
+                std::cout << "Process " << world_rank
+                    << " asking Process " << i << " to allocate memory"
+                    << std::endl;
+                if (!(out == -1))
+                {
+                    std::cout << "Answer of Process " << i
+                        << " to allocate memory asked from Process "
+                        << world_rank << " is yes and ID is " << buff_value << std::endl;
+                    alloc_idx = buff_value;
+                    break;
+                }
             }
         }
+        if (alloc_idx == -1)
+            std::cout << "Process " << world_rank
+                << " tried to allocate memory asked but no space is available." << std::endl;
+
+        return alloc_idx;
     }
-    if (alloc_idx == -1)
+
+    int DistributedAllocator::read(int id) {
+        std::cout << "Process " << world_rank << " want to read" << std::endl;
+
+        int process_id = id / (MAX_INT / world_size);
+
+        if (process_id == world_rank)
+        {
+            std::cout << "Process " << process_id
+                << " gave " << world_rank << " value " << (*collection)[id].second
+                << std::endl;
+
+            return (*collection)[id].second;
+        }
+
+        send_key->push(std::make_pair(process_id, id));
+        cv.notify_one();
+
+        // Wait until my received thread get the result
+        std::unique_lock<std::mutex> lk(m);
+        cv_get.wait(lk, []{return get_ready;});
+
+        int out = buff_value;
+        get_ready = false;
+
+        std::cout << "Process " << process_id
+            << " gave " << world_rank << " value " << out
+            << std::endl;
+
+        return out;
+    }
+
+    int DistributedAllocator::next(int id)
+    {
+        return (*collection)[id].first;
+    }
+
+    bool DistributedAllocator::write(int id, int value) {
+        std::cout << "Process " << world_rank << " want to write" << std::endl;
+
+        int process_id = id / (MAX_INT / world_size);
+
+        if (process_id == world_rank) {
+            std::cout << "Process " << process_id
+                << " write " << world_rank << " value " << value
+                << std::endl;
+
+            //(*collection)[id] = std::make_pair(-1, value);
+            (*collection)[id].second = value;
+
+            return true;
+        }
+
+        send_key_write->push(std::make_pair(process_id, std::make_pair(id, value)));
+        cv.notify_one();
+
+        // Wait until my received thread get the result
+        std::unique_lock<std::mutex> lk(m);
+        cv_get.wait(lk, []{return get_ready;});
+
+        bool out = (bool)buff_value;
+        get_ready = false;
+
         std::cout << "Process " << world_rank
-            << " tried to allocate memory asked but no space is available." << std::endl;
-
-    return alloc_idx;
-}
-
-int DistributedAllocator::read(int id) {
-    std::cout << "Process " << world_rank << " want to read" << std::endl;
-
-    int process_id = id / (MAX_INT / world_size);
-
-    if (process_id == world_rank)
-    {
-        std::cout << "Process " << process_id
-            << " gave " << world_rank << " value " << (*collection)[id].second
+            << " change process " << process_id << " value "
             << std::endl;
 
-        return (*collection)[id].second;
+        return out;
     }
 
-    send_key->push(std::make_pair(process_id, id));
-    cv.notify_one();
-
-    // Wait until my received thread get the result
-    std::unique_lock<std::mutex> lk(m);
-    cv_get.wait(lk, []{return get_ready;});
-
-    int out = buff_value;
-    get_ready = false;
-
-    std::cout << "Process " << process_id
-        << " gave " << world_rank << " value " << out
-        << std::endl;
-
-    return out;
-}
-
-int DistributedAllocator::next(int id)
-{
-    return (*collection)[id].first;
-}
-
-bool DistributedAllocator::write(int id, int value) {
-    std::cout << "Process " << world_rank << " want to write" << std::endl;
-
-    int process_id = id / (MAX_INT / world_size);
-
-    if (process_id == world_rank) {
-        std::cout << "Process " << process_id
-            << " write " << world_rank << " value " << value
-            << std::endl;
-
-        //(*collection)[id] = std::make_pair(-1, value);
-        (*collection)[id].second = value;
-
-        return true;
-    }
-
-    send_key_write->push(std::make_pair(process_id, std::make_pair(id, value)));
-    cv.notify_one();
-
-    // Wait until my received thread get the result
-    std::unique_lock<std::mutex> lk(m);
-    cv_get.wait(lk, []{return get_ready;});
-
-    bool out = (bool)buff_value;
-    get_ready = false;
-
-    std::cout << "Process " << world_rank
-        << " change process " << process_id << " value "
-        << std::endl;
-
-    return out;
-}
-
-bool DistributedAllocator::write(int id, int* vals, unsigned int size)
-{
-    bool ret = true ;
-    unsigned int i = 0 ;
-    int next_id = id ;
-    while ((i < size) && (next_id != -1))
+    bool DistributedAllocator::write(int id, int* vals, unsigned int size)
     {
-        ret = ret && write(next_id, *(vals + i));
-        next_id = next(next_id);
-        i++;
-    }
-    if ((i != size) && (next_id == -1))
-    {
-        std::cout  << "Process " << world_rank
-            << " not enought memory allocated to write all the data "
-            << std::endl;
-        return false;
-    }
-    return ret;
+        bool ret = true ;
+        unsigned int i = 0 ;
+        int next_id = id ;
+        while ((i < size) && (next_id != -1))
+        {
+            ret = ret && write(next_id, *(vals + i));
+            next_id = next(next_id);
+            i++;
+        }
+        if ((i != size) && (next_id == -1))
+        {
+            std::cout  << "Process " << world_rank
+                << " not enought memory allocated to write all the data "
+                << std::endl;
+            return false;
+        }
+        return ret;
 
-}
+    }
 
 }
