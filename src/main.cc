@@ -10,13 +10,13 @@ int main() {
 
     if (DistributedAllocator::world_rank == 0)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 6; ++i)
             std::cout << DistributedAllocator::alloc() << "\n";
         
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 6; ++i)
             DistributedAllocator::free(i);
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 6; ++i)
             std::cout << DistributedAllocator::alloc() << "\n";
     }
 

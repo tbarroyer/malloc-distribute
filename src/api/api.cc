@@ -88,12 +88,10 @@ namespace api {
             else if (status.MPI_TAG == 66) {
                 if (cur_id < max_id)
                 {
-                    (*collection)[cur_id] = std::make_pair(-1, 42);
+                    int out = alloc();
 
-                    Message m = {status.MPI_SOURCE, 22, {cur_id, -1}};
+                    Message m = {status.MPI_SOURCE, 22, {out, -1}};
                     send_queue->push(m);
-
-                    cur_id++;
                 }
                 else {
                     Message m = {status.MPI_SOURCE, 22, {-1, -1}};
@@ -189,6 +187,7 @@ namespace api {
 //        std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
         int process_id = id / (MAX_INT / world_size);;
         //int next_id =(*collection)[id].first;
+
         while (id != -1 && process_id == world_rank)
         {
 //            std::cout << "Process " << world_rank << " freed id " << id << " on his memory" << std::endl;
