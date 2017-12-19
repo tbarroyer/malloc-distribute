@@ -186,10 +186,9 @@ namespace api {
 
         std::cout << "QUIT " << world_rank << "\n";
 
-        int toto;
-
-        MPI_Request request;
-        MPI_Isend(&toto, 1, MPI_INT, world_rank, 4, MPI_COMM_WORLD, &request);
+        Message msg = {world_rank, 4, {-1, -1}};
+        send_queue->push(msg);
+        cv.notify_one();
 
         re.join();
         se.join();
