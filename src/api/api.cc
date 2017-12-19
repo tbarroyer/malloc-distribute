@@ -169,9 +169,7 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
-        std::cout << "READY " << world_rank << "\n";
         MPI_Barrier(MPI_COMM_WORLD);
-        std::cout << "CLOSI " << world_rank << "\n";
 
         Message msg = {world_rank, 4, {-1, -1}};
         send_queue->push(msg);
@@ -179,12 +177,16 @@ namespace api {
 
         re.join();
         se.join();
-
+        
         delete collection;
         delete send_queue;
 
-        MPI_Barrier(MPI_COMM_WORLD);
+        std::cout << "KO " << world_rank << std::endl;
 
+        MPI_Barrier(MPI_COMM_WORLD);
+        
+        std::cout << "OK " << world_rank << std::endl;
+        
         MPI_Finalize();
     }
 

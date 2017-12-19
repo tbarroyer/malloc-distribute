@@ -26,7 +26,7 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (DistributedAllocator::world_rank == 0)
+    if (DistributedAllocator::world_rank == 4)
     {
         int idx = 0;
         int val = -1;
@@ -37,6 +37,8 @@ int main() {
             idx = DistributedAllocator::next(idx);
         }
     }
+    
+    MPI_Barrier(MPI_COMM_WORLD);
 
     DistributedAllocator::close();
     return 0;
