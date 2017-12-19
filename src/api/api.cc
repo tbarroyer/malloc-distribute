@@ -264,14 +264,14 @@ namespace api {
         // allocate memory
         if (!free_disp->empty()) {
             alloc_idx = free_disp->front();
-            std::cout << "ID " << alloc_idx << " given" << std::endl;
+            //std::cout << "ID " << alloc_idx << " given" << std::endl;
             (*collection)[alloc_idx] = std::make_pair(-1, 42);
             free_disp->pop();
             return alloc_idx;
         }
         if (cur_id < max_id)
         {
-            std::cout << "ID " << cur_id << " given" << std::endl;
+            //std::cout << "ID " << cur_id << " given" << std::endl;
             (*collection)[cur_id] = std::make_pair(-1, 42);
             alloc_idx = cur_id;
             cur_id++;

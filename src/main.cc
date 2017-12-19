@@ -9,10 +9,10 @@ int main() {
     DistributedAllocator::init();
     int head;
  //   int idx;
-    /*if (DistributedAllocator::world_rank == 1)
+    if (DistributedAllocator::world_rank == 1)
     {
-        DistributedAllocator::alloc();
-    }*/
+      std::cout << "I do exist" <<std::endl;
+    }
     unsigned int size = 10;
     if (DistributedAllocator::world_rank == 0) {
         head = DistributedAllocator::alloc(size);
@@ -38,12 +38,25 @@ int main() {
         MPI_Barrier(MPI_COMM_WORLD);
         DistributedAllocator::free(head);
         MPI_Barrier(MPI_COMM_WORLD);
-        std::cout << "_________________________" << std::endl;
         //head = DistributedAllocator::alloc(size);
-        std::cout << "_________________________" << std::endl;
         //DistributedAllocator::free(head);
       //  head = DistributedAllocator::alloc(size);
+        auto fdp = DistributedAllocator::free_disp;
+        while(!fdp->empty())
+        {
+          std::cout << fdp->front() << std::endl;
+          fdp->pop();
+        }
     }
+  /*  if (DistributedAllocator::world_rank == 1) {
+        std::cout << DistributedAllocator::free_disp << std::endl;
+        auto fdp = DistributedAllocator::free_disp;
+        while(!fdp->empty())
+        {
+          std::cout << fdp->front() << std::endl;
+          fdp->pop();
+        }
+    }*/
     MPI_Barrier(MPI_COMM_WORLD);
 
     DistributedAllocator::close();
