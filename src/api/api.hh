@@ -11,6 +11,13 @@
 # include <vector>
 
 namespace api {
+
+    struct Message {
+        int process_id;
+        int tag;
+        int data[2];
+    };
+
     class DistributedAllocator {
     public:
         // init OPENMPI
@@ -58,6 +65,8 @@ namespace api {
         static int max_id;
         static int cur_id;
         static std::map<int, std::pair<int, int>>* collection;
+
+        static std::queue<Message>* send_queue;
 
         static std::queue<std::pair<int, int>>* send_value;
         static std::queue<std::pair<int, int>>* send_free;
