@@ -57,7 +57,7 @@ namespace api {
         static int world_size;
         // Id of process
         static int world_rank;
-
+        static std::queue<int>* free_disp;
     private:
         static int  buff_value;
         static bool get_ready;
@@ -68,7 +68,7 @@ namespace api {
 
         static std::queue<Message>* send_queue;
 
-        static std::queue<int>* free_disp;
+        //static std::queue<int>* free_disp;
 
         static std::thread re;
         static std::thread se;
