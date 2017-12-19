@@ -169,7 +169,9 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
+        std::cout << "READY " << world_rank << "\n";
         MPI_Barrier(MPI_COMM_WORLD);
+        std::cout << "CLOSI " << world_rank << "\n";
 
         Message msg = {world_rank, 4, {-1, -1}};
         send_queue->push(msg);
@@ -216,7 +218,7 @@ namespace api {
 
 
     int DistributedAllocator::alloc(unsigned int size) {
-        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
+//        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
         int ret_idx = alloc();
         int first_idx = ret_idx;
         if (first_idx == -1)

@@ -1,7 +1,10 @@
 # include <iostream>
 # include <unistd.h>
+# include <cstddef>
 
 # include "api/api.hh"
+
+# define SIZE 10
 
 using namespace api;
 
@@ -10,19 +13,24 @@ int main() {
 
     if (DistributedAllocator::world_rank == 0)
     {
-        int head = DistributedAllocator::alloc(10);
-        //MPI_Barrier(MPI_COMM_WORLD);
+        int head = DistributedAllocator::alloc(SIZE);
+
+        MPI_Barrier(MPI_COMM_WORLD);
         int idx = head;
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < SIZE; i++)
         {
-            std::cout << "Index is: " << idx << std::endl;
-            DistributedAllocator::write(idx, idx * 10);
+            DistributedAllocator::write(idx, rand() % SIZE);
             idx = DistributedAllocator::next(idx);
         }
+    }
 
-        idx = head;
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (DistributedAllocator::world_rank == 0)
+    {
+        int idx = 0;
         int val = -1;
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < SIZE; i++)
         {
             val = DistributedAllocator::read(idx);
             std::cout << "Index is: " << idx << " and value is " << val << std::endl;
