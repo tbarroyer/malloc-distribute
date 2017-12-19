@@ -8,7 +8,7 @@ using namespace api;
 int main() {
     DistributedAllocator::init();
     int head;
-    int idx;
+ //   int idx;
     if (DistributedAllocator::world_rank == 1)
     {
         DistributedAllocator::alloc();
@@ -16,7 +16,8 @@ int main() {
     unsigned int size = 10;
     if (DistributedAllocator::world_rank == 0) {
         head = DistributedAllocator::alloc(size);
-        DistributedAllocator::write(head, 0);
+        std::cout << "_________________________" << std::endl;
+        /*DistributedAllocator::write(head, 0);
         idx = head;
         for (unsigned int i = 1; i < size; i++)
         {
@@ -33,12 +34,15 @@ int main() {
             val = DistributedAllocator::read(idx);
             std::cout << val << std::endl;
         }
-        std::cout << head << std::endl;
+        std::cout << head << std::endl;*/
         DistributedAllocator::free(head);
+        std::cout << "_________________________" << std::endl;
         head = DistributedAllocator::alloc(size);
-
+        std::cout << "_________________________" << std::endl;
+        DistributedAllocator::free(head);
     }
     MPI_Barrier(MPI_COMM_WORLD);
+
     DistributedAllocator::close();
     return 0;
 }
