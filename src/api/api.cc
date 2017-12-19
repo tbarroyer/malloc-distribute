@@ -62,7 +62,7 @@ namespace api {
             }
 
             else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
-                     status.MPI_TAG == 76) {
+                     status.MPI_TAG == 76 || status.MPI_TAG == 45 ) {
                 buff_value = buf[0];
                 get_ready = true;
                 cv_get.notify_one();
@@ -101,6 +101,13 @@ namespace api {
                     send_queue->push(m);
                 }
 
+                cv.notify_one();
+            }
+            // Someone want to alloc rest collection
+            else if (status.MPI_TAG == 44) {
+                int idx = alloc(buf[0]);
+                Message m = {status.MPI_SOURCE, 45, {idx, -1}};
+                send_queue->push(m);
                 cv.notify_one();
             }
         }
@@ -212,7 +219,9 @@ namespace api {
         if (first_idx == -1)
             return first_idx;
         int second_idx;
-        for (unsigned int i = 1; i < size; i++)
+        unsigned int i = 1;
+        int process_id = cur_id / (MAX_INT / world_size);
+        while ((cur_id < max_id) && (i < size) && (world_rank == process_id))
         {
             second_idx = alloc();
             if (second_idx == -1)
@@ -222,7 +231,28 @@ namespace api {
                 << (*collection)[first_idx].second << " has next id "
                 << (*collection)[first_idx].first << std::endl;
             first_idx = second_idx;
+            process_id = cur_id / (MAX_INT / world_size);
+            i++;
         }
+        if ((cur_id == max_id) && (i < size) )
+        {
+          int nsize = size - i;
+          Message message = {process_id, 44, {nsize, -1}};
+
+          send_queue->push(message);
+
+          cv.notify_one();
+
+        // Wait until my received thread get the result
+          std::unique_lock<std::mutex> lk(m);
+          cv_get.wait(lk, []{return get_ready;});
+
+          int out = buff_value;
+          get_ready = false;
+          std::cout <<"Tag Message 44 " << first_idx <<" has next out "
+          << out  <<" from procees : " << process_id << std::endl ;
+            (*collection)[first_idx].first =  out  ;
+          }
         return ret_idx;
     }
 

@@ -42,7 +42,7 @@ int main() {
         //head = DistributedAllocator::alloc(size);
         std::cout << "_________________________" << std::endl;
         //DistributedAllocator::free(head);
-        head = DistributedAllocator::alloc(size);
+      //  head = DistributedAllocator::alloc(size);
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
