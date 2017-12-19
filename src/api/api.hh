@@ -68,14 +68,6 @@ namespace api {
 
         static std::queue<Message>* send_queue;
 
-        static std::queue<std::pair<int, int>>* send_value;
-        static std::queue<std::pair<int, int>>* send_free;
-        static std::queue<std::pair<int, int>>* ret_free;
-        static std::queue<std::pair<int, int>>* send_key;
-        static std::queue<std::pair<int, int>>* send_alloc_req;
-        static std::queue<std::pair<int, int>>* send_alloc_resp;
-        static std::queue<std::pair<int, std::pair<int, int>>>* send_key_write;
-
         static std::queue<int>* free_disp;
 
         static std::thread re;
