@@ -48,7 +48,7 @@ namespace api {
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
-                std::cout << "Receive thread break" << std::endl;
+//                std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
                 break;
             }
@@ -132,7 +132,7 @@ namespace api {
 
                 if (msg.process_id == world_rank && msg.tag == 4)
                 {
-                    std::cout << "Send thread break" << std::endl;
+//                    std::cout << "Send thread break" << std::endl;
                     break;
                 }
             }
@@ -154,7 +154,7 @@ namespace api {
         max_id = (world_rank + 1) * (MAX_INT / world_size);
         cur_id = world_rank * (MAX_INT / world_size);
 
-        std::cout << "Process " << world_rank << " initialized." << std::endl;
+//        std::cout << "Process " << world_rank << " initialized." << std::endl;
 
         re = std::thread(loop_re);
         se = std::thread(loop_se);
@@ -163,7 +163,7 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
-        std::cout << "WAIT QUIT " << world_rank << "\n";
+//        std::cout << "WAIT QUIT " << world_rank << "\n";
 
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -179,26 +179,26 @@ namespace api {
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        std::cout << "QUIT " << world_rank << "\n";
+ //       std::cout << "QUIT " << world_rank << "\n";
 
         MPI_Finalize();
     }
 
 
     void DistributedAllocator::free(int id) {
-        std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
+//        std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
         int process_id = id / (MAX_INT / world_size);;
         //int next_id =(*collection)[id].first;
         while (id != -1 && process_id == world_rank)
         {
-            std::cout << "Process " << world_rank << " freed id " << id << " on his memory" << std::endl;
+//            std::cout << "Process " << world_rank << " freed id " << id << " on his memory" << std::endl;
 
             free_disp->push(id);
             id = (*collection)[id].first;
             if (id != -1)
                 (*collection)[id - 1].first = -1;
             process_id = id / (MAX_INT / world_size);
-            std::cout << "Next id: " << id << std::endl;
+//            std::cout << "Next id: " << id << std::endl;
         }
 
         if (id != -1)
@@ -215,7 +215,7 @@ namespace api {
 
 
     int DistributedAllocator::alloc(unsigned int size) {
-        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
+//        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
         int ret_idx = alloc();
         int first_idx = ret_idx;
         if (first_idx == -1)
@@ -229,9 +229,9 @@ namespace api {
             if (second_idx == -1)
                 break;
             (*collection)[first_idx].first = second_idx;
-            std::cout << "Key " << first_idx << " with value "
-                << (*collection)[first_idx].second << " has next id "
-                << (*collection)[first_idx].first << std::endl;
+//            std::cout << "Key " << first_idx << " with value "
+//                << (*collection)[first_idx].second << " has next id "
+//                << (*collection)[first_idx].first << std::endl;
             first_idx = second_idx;
             process_id = cur_id / (MAX_INT / world_size);
             i++;
@@ -251,15 +251,15 @@ namespace api {
 
           int out = buff_value;
           get_ready = false;
-          std::cout <<"Tag Message 44 " << first_idx <<" has next out "
-          << out  <<" from procees : " << process_id << std::endl ;
+//          std::cout <<"Tag Message 44 " << first_idx <<" has next out "
+//          << out  <<" from procees : " << process_id << std::endl ;
             (*collection)[first_idx].first =  out  ;
           }
         return ret_idx;
     }
 
     int DistributedAllocator::alloc() {
-        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
+//        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
         int alloc_idx = -1;
         // allocate memory
         if (!free_disp->empty()) {
@@ -296,36 +296,36 @@ namespace api {
                 int out = buff_value;
                 get_ready = false;
 
-                std::cout << "Process " << world_rank
-                    << " asking Process " << i << " to allocate memory"
-                    << std::endl;
+//                std::cout << "Process " << world_rank
+//                    << " asking Process " << i << " to allocate memory"
+//                  << std::endl;
                 if (!(out == -1))
                 {
-                    std::cout << "Answer of Process " << i
-                        << " to allocate memory asked from Process "
-                        << world_rank << " is yes and ID is " << buff_value << std::endl;
+//                    std::cout << "Answer of Process " << i
+//                        << " to allocate memory asked from Process "
+//                        << world_rank << " is yes and ID is " << buff_value << std::endl;
                     alloc_idx = buff_value;
                     break;
                 }
             }
         }
-        if (alloc_idx == -1)
-            std::cout << "Process " << world_rank
-                << " tried to allocate memory asked but no space is available." << std::endl;
+//        if (alloc_idx == -1)
+//            std::cout << "Process " << world_rank
+//                << " tried to allocate memory asked but no space is available." << std::endl;
 
         return alloc_idx;
     }
 
     int DistributedAllocator::read(int id) {
-        std::cout << "Process " << world_rank << " want to read" << std::endl;
+//        std::cout << "Process " << world_rank << " want to read" << std::endl;
 
         int process_id = id / (MAX_INT / world_size);
 
         if (process_id == world_rank)
         {
-            std::cout << "Process " << process_id
-                << " gave " << world_rank << " value " << (*collection)[id].second
-                << std::endl;
+//            std::cout << "Process " << process_id
+//                << " gave " << world_rank << " value " << (*collection)[id].second
+//                << std::endl;
 
             return (*collection)[id].second;
         }
@@ -342,9 +342,9 @@ namespace api {
         int out = buff_value;
         get_ready = false;
 
-        std::cout << "Process " << process_id
-            << " gave " << world_rank << " value " << out
-            << std::endl;
+//        std::cout << "Process " << process_id
+//            << " gave " << world_rank << " value " << out
+//            << std::endl;
 
         return out;
     }
@@ -355,14 +355,14 @@ namespace api {
     }
 
     bool DistributedAllocator::write(int id, int value) {
-        std::cout << "Process " << world_rank << " want to write" << std::endl;
+//        std::cout << "Process " << world_rank << " want to write" << std::endl;
 
         int process_id = id / (MAX_INT / world_size);
 
         if (process_id == world_rank) {
-            std::cout << "Process " << process_id
-                << " write " << world_rank << " value " << value
-                << std::endl;
+//            std::cout << "Process " << process_id
+//                << " write " << world_rank << " value " << value
+//                << std::endl;
 
             (*collection)[id].second = value;
 
@@ -378,9 +378,9 @@ namespace api {
         bool out = (bool)buff_value;
         get_ready = false;
 
-        std::cout << "Process " << world_rank
-            << " change process " << process_id << " value "
-            << std::endl;
+//        std::cout << "Process " << world_rank
+//            << " change process " << process_id << " value "
+//            << std::endl;
 
         return out;
     }
@@ -399,9 +399,9 @@ namespace api {
 
         if ((i != size) && (next_id == -1))
         {
-            std::cout  << "Process " << world_rank
-                       << " not enought memory allocated to write all the data "
-                       << std::endl;
+//            std::cout  << "Process " << world_rank
+//                       << " not enought memory allocated to write all the data "
+//                       << std::endl;
             return false;
         }
         return ret;
