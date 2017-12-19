@@ -48,6 +48,8 @@ namespace api {
 
         // write a Table in memory
         static bool write(int id, int* vals,unsigned int size);
+    
+        static bool write_at(int head, int index, int value);
 
     private:
         static void loop_re();

@@ -15,12 +15,8 @@ int main() {
     {
         int head = DistributedAllocator::alloc(SIZE);
 
-        int idx = head;
         for (int i = 0; i < SIZE; i++)
-        {
-            DistributedAllocator::write(idx, rand() % SIZE);
-            idx = DistributedAllocator::next(idx);
-        }
+            DistributedAllocator::write_at(head, i, rand() % SIZE);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

@@ -438,4 +438,15 @@ namespace api {
 
         return DistributedAllocator::read(idx);
     }
+
+    bool DistributedAllocator::write_at(int head, int index, int value)
+    {
+        int idx = head;
+        for (int i = 0; i < index; ++i)
+        {
+            idx = next(idx);
+        }
+
+        return DistributedAllocator::write(idx, value);
+    }
 }
