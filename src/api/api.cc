@@ -4,8 +4,8 @@
 # include <unistd.h>
 
 # include "api.hh"
-# define MAX_INT 15
-//# define MAX_INT INT_MAX
+//# define MAX_INT 15
+# define MAX_INT INT_MAX
 namespace api {
 
     // Initialize static variables
@@ -24,6 +24,8 @@ namespace api {
 
     std::thread DistributedAllocator::re = std::thread();
     std::thread DistributedAllocator::se = std::thread();
+
+    std::queue<Message>* DistributedAllocator::send_queue = new std::queue<Message>();
 
     std::queue<std::pair<int, int>>* DistributedAllocator::send_value = new std::queue<std::pair<int, int>>();
     std::queue<std::pair<int, int>>* DistributedAllocator::send_free = new std::queue<std::pair<int, int>>();
@@ -55,8 +57,14 @@ namespace api {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank) {
+
+                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
+                send_queue->push(m);
+
                 send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]].second));
+
                 std::cout << "Receive thread break" << std::endl;
+
                 cv.notify_one();
                 break;
             }
@@ -64,13 +72,15 @@ namespace api {
             // Someone wants to access my memory
             if (status.MPI_TAG == 99) {
                 if (buf[0] != -1) {
+                    Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].second, -1}};
+                    send_queue->push(m);
+
                     send_value->push(std::make_pair(status.MPI_SOURCE, (*collection)[buf[0]].second));
                     cv.notify_one();
                 }
                 else if (buf[0] == -1) {
-                    cv_get.notify_one();
-                    get_ready = true;
                     buff_value = 1;
+                    get_ready = true;
                     cv_get.notify_one();
                 }
             }
@@ -90,26 +100,44 @@ namespace api {
 
             else if (status.MPI_TAG == 11) {
                 free_disp->push(buf[0]);
+
+                Message m = {status.MPI_SOURCE, 33, {1, -1}};
+                send_queue->push(m);
+
                 ret_free->push(std::make_pair(status.MPI_SOURCE, 1));
+
                 cv.notify_one();
             }
 
             // Someone want to change my memory
             else if (status.MPI_TAG == 88) {
                 (*collection)[buf[0]] = std::make_pair((*collection)[buf[0]].first, buf[1]);
+
+                Message m = {status.MPI_SOURCE, 99, {-1, -1}};
+                send_queue->push(m);
+
                 send_key->push(std::make_pair(status.MPI_SOURCE, -1));
+
                 cv.notify_one();
             }
             // Someone want to alloc my memory
             else if (status.MPI_TAG == 66) {
-                if (cur_id < max_id)
-                {
+                if (cur_id < max_id) {
                     (*collection)[cur_id] = std::make_pair(-1, 42);
+
+                    Message m = {status.MPI_SOURCE, 22, {cur_id, -1}};
+                    send_queue->push(m);
+
                     send_alloc_resp->push(std::make_pair(status.MPI_SOURCE, cur_id));
+
                     cur_id++;
                 }
-                else
+                else {
+                    Message m = {status.MPI_SOURCE, 22, {-1, -1}};
+                    send_queue->push(m);
+
                     send_alloc_resp->push(std::make_pair(status.MPI_SOURCE, -1));
+                }
                 cv.notify_one();
             }
             // Someone returns me the id of the alloc I asked for
@@ -227,7 +255,9 @@ namespace api {
     }
 
     void DistributedAllocator::close() {
+        std::cout << "WAIT CLOSING " << world_rank <<"\n";
         MPI_Barrier(MPI_COMM_WORLD);
+        std::cout << "START CLOSING\n";
 
         int toto;
 
@@ -260,9 +290,11 @@ namespace api {
             int next_id =(*collection)[id].first;
             while ((next_id != -1) && ((next_id / (MAX_INT / world_size)) == world_rank) )
             {
-              free_disp->push(next_id);
-              next_id =(*collection)[next_id].first;
+                free_disp->push(next_id);
+                next_id =(*collection)[next_id].first;
             }
+
+
             //if exited the loop because next_id is not in the current process
             if (next_id != -1)
             {
@@ -272,6 +304,7 @@ namespace api {
                 std::unique_lock<std::mutex> lk(m);
                 cv_get.wait(lk, []{return get_ready;});
                 get_ready = false;
+                std::cout << "OK\n";
             }
             //END HAMZA
         }
@@ -333,7 +366,11 @@ namespace api {
                 if (i == world_rank)
                     continue;
 
+                Message message = {i, 66, {-1, -1}};
+                send_queue->push(message);
+
                 send_alloc_req->push(std::make_pair(i, i));
+
                 cv.notify_one();
 
                 // Wait until my received thread get the result
@@ -376,6 +413,9 @@ namespace api {
 
             return (*collection)[id].second;
         }
+                
+        Message message = {process_id, 99, {id, -1}};
+        send_queue->push(message);
 
         send_key->push(std::make_pair(process_id, id));
         cv.notify_one();
@@ -414,6 +454,9 @@ namespace api {
 
             return true;
         }
+        
+        Message message = {process_id, 88, {id, value}};
+        send_queue->push(message);
 
         send_key_write->push(std::make_pair(process_id, std::make_pair(id, value)));
         cv.notify_one();

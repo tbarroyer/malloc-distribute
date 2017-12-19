@@ -13,7 +13,10 @@ int main() {
     {
         DistributedAllocator::alloc();
     }
-    unsigned int size = 10;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    unsigned int size = 4;
     if (DistributedAllocator::world_rank == 0) {
         head = DistributedAllocator::alloc(size);
         DistributedAllocator::write(head, 0);
@@ -34,11 +37,16 @@ int main() {
             std::cout << val << std::endl;
         }
         std::cout << head << std::endl;
+        std::cout << "__________________________DONE" << std::endl;
         DistributedAllocator::free(head);
+        std::cout << "__________________________DONE" << std::endl;
         head = DistributedAllocator::alloc(size);
 
+        std::cout << "__________________________DONE" << std::endl;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+
+    std::cout << "READY TO FREE" << std::endl;
+
     DistributedAllocator::close();
     return 0;
 }
