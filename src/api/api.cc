@@ -392,6 +392,8 @@ namespace api {
             return true;
         }
 
+        Message msg = {process_id, 88, {id, value}};
+        send_queue->push(msg);
         cv.notify_one();
 
         // Wait until my received thread get the result
