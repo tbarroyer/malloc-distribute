@@ -61,6 +61,14 @@ namespace api {
                 cv.notify_one();
             }
 
+            else if (status.MPI_TAG == 101)
+            {
+                Message m = {status.MPI_SOURCE, 77, {(*collection)[buf[0]].first, -1}};
+                send_queue->push(m);
+
+                cv.notify_one();
+            }
+
             else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
                      status.MPI_TAG == 76 || status.MPI_TAG == 45 ) {
                 buff_value = buf[0];
@@ -212,7 +220,7 @@ namespace api {
 
 
     int DistributedAllocator::alloc(unsigned int size) {
-//        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
+        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
         int ret_idx = alloc();
         int first_idx = ret_idx;
         if (first_idx == -1)
@@ -226,6 +234,7 @@ namespace api {
             if (second_idx == -1)
                 break;
             (*collection)[first_idx].first = second_idx;
+            //std::cout << "Process " << world_rank << " => Return of alloc is " << first_idx << " and next is " << second_idx << std::endl;
 //            std::cout << "Key " << first_idx << " with value "
 //                << (*collection)[first_idx].second << " has next id "
 //                << (*collection)[first_idx].first << std::endl;
@@ -348,7 +357,24 @@ namespace api {
 
     int DistributedAllocator::next(int id)
     {
-        return (*collection)[id].first;
+        int process_id = id / (MAX_INT / world_size);
+        if (process_id == world_rank)
+            return (*collection)[id].first;
+        else
+        {
+            Message msg = {process_id, 101, {id, -1}};
+            send_queue->push(msg);
+
+            cv.notify_one();
+
+            // Wait until my received thread get the result
+            std::unique_lock<std::mutex> lk(m);
+            cv_get.wait(lk, []{return get_ready;});
+
+            int out = buff_value;
+            get_ready = false;
+            return out;
+        }
     }
 
     bool DistributedAllocator::write(int id, int value) {
