@@ -47,7 +47,6 @@ namespace api {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
-
                 std::cout << "Receive thread break" << std::endl;
                 cv.notify_one();
                 break;
@@ -187,7 +186,7 @@ namespace api {
 
     void DistributedAllocator::free(int id) {
         std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
-        int process_id = id / (MAX_INT / world_size);;
+        int process_id = id / (MAX_INT / world_size);
         //int next_id =(*collection)[id].first;
         while (id != -1 && process_id == world_rank)
         {
