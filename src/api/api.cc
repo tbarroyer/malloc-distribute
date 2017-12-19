@@ -4,8 +4,8 @@
 # include <unistd.h>
 
 # include "api.hh"
-//# define MAX_INT 10
-# define MAX_INT INT_MAX
+# define MAX_INT 15
+//# define MAX_INT INT_MAX
 namespace api {
 
     // Initialize static variables
@@ -41,7 +41,7 @@ namespace api {
     std::condition_variable DistributedAllocator::cv;
     std::condition_variable DistributedAllocator::cv_get;
 
-    std::vector<int>* DistributedAllocator::free_disp = new std::vector<int>();
+    std::queue<int>* DistributedAllocator::free_disp = new std::queue<int>();
 
     // Member definitions ========
     // ===========================
@@ -89,7 +89,7 @@ namespace api {
             }
 
             else if (status.MPI_TAG == 11) {
-                free_disp->push_back(buf[0]);
+                free_disp->push(buf[0]);
                 ret_free->push(std::make_pair(status.MPI_SOURCE, 1));
                 cv.notify_one();
             }
@@ -143,6 +143,7 @@ namespace api {
 
                 if (pair.first == world_rank)
                 {
+                    std::cout << "Send thread break" << std::endl;
                     break;
                 }
 
@@ -253,17 +254,17 @@ namespace api {
         int process_id = id / (MAX_INT / world_size);
 
         if (process_id == world_rank) {
-            free_disp->push_back(id);
+            free_disp->push(id);
             //BEGIN HAMZA
             //free all the nexts ids
             int next_id =(*collection)[id].first;
-            while((next_id != -1) && ((next_id/ (MAX_INT / world_size)) == world_rank) )
+            while ((next_id != -1) && ((next_id / (MAX_INT / world_size)) == world_rank) )
             {
-              free_disp->push_back(next_id);
+              free_disp->push(next_id);
               next_id =(*collection)[next_id].first;
             }
             //if exited the loop because next_id is not in the current process
-            if(next_id != -1)
+            if (next_id != -1)
             {
                 send_free->push(std::make_pair(process_id, id));
                 cv.notify_one();
@@ -318,10 +319,10 @@ namespace api {
                 cur_id++;
             }
             else {
-                alloc_idx = free_disp->back();
+                alloc_idx = free_disp->front();
                 std::cout << "ID " << alloc_idx << " given" << std::endl;
                 (*collection)[alloc_idx] = std::make_pair(-1, 42);
-                free_disp->pop_back();
+                free_disp->pop();
             }
         }
         else
