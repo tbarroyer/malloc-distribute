@@ -69,8 +69,7 @@ namespace api {
             }
 
             else if (status.MPI_TAG == 11) {
-                //free_disp->push(buf[0]);
-
+                free(buf[0]);
                 Message m = {status.MPI_SOURCE, 33, {1, -1}};
                 send_queue->push(m);
 
@@ -188,14 +187,17 @@ namespace api {
 
     void DistributedAllocator::free(int id) {
         std::cout << "Process " << world_rank << " want to free id " << id << std::endl;
-        int process_id = world_rank;
+        int process_id = id / (MAX_INT / world_size);;
         //int next_id =(*collection)[id].first;
         while (id != -1 && process_id == world_rank)
         {
             std::cout << "Process " << world_rank << " freed id " << id << " on his memory" << std::endl;
-            process_id = id / (MAX_INT / world_size);
+
             free_disp->push(id);
             id = (*collection)[id].first;
+            if (id != -1)
+                (*collection)[id - 1].first = -1;
+            process_id = id / (MAX_INT / world_size);
             std::cout << "Next id: " << id << std::endl;
         }
 
