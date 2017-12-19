@@ -182,6 +182,8 @@ namespace api {
     void DistributedAllocator::close() {
         MPI_Barrier(MPI_COMM_WORLD);
 
+        std::cout << "QUIT " << world_rank << "\n";
+
         int toto;
 
         MPI_Request request;
