@@ -5,7 +5,7 @@
 # include <chrono>
 
 # include "api.hh"
-# define MAX_INT 10
+# define MAX_INT 40
 //# define MAX_INT INT_MAX
 namespace api {
 
@@ -35,6 +35,8 @@ namespace api {
     std::condition_variable DistributedAllocator::cv_get;
 
     std::queue<int>* DistributedAllocator::free_disp = new std::queue<int>();
+
+    bool DistributedAllocator::loop = false;
 
     // Member definitions ========
     // ===========================
@@ -72,6 +74,7 @@ namespace api {
 
             else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
                      status.MPI_TAG == 76 || status.MPI_TAG == 45 ) {
+
                 buff_value = buf[0];
                 get_ready = true;
                 cv_get.notify_one();
@@ -95,8 +98,7 @@ namespace api {
             }
             // Someone want to alloc my memory
             else if (status.MPI_TAG == 66) {
-                if (cur_id < max_id || !free_disp->empty())
-                {
+                if (cur_id < max_id || !free_disp->empty()) {
                     int out = alloc();
 
                     Message m = {status.MPI_SOURCE, 22, {out, -1}};
@@ -111,10 +113,17 @@ namespace api {
             }
             // Someone want to alloc rest collection
             else if (status.MPI_TAG == 44) {
-                int idx = alloc(buf[0]);
-                Message m = {status.MPI_SOURCE, 45, {idx, -1}};
-                send_queue->push(m);
-                cv.notify_one();
+                if (!loop) {
+                  int idx = alloc(buf[0]);
+                  Message m = {status.MPI_SOURCE, 45, {idx, -1}};
+                  send_queue->push(m);
+                  cv.notify_one();
+                }
+                else {
+                  Message m = {status.MPI_SOURCE, 45, {-1, -1}};
+                  send_queue->push(m);
+                  cv.notify_one();
+                }
             }
         }
     }
@@ -240,6 +249,8 @@ namespace api {
             i++;
         }
 
+        loop = true;
+
         if (process_id >= world_size)
           process_id = 0;
 
@@ -256,16 +267,19 @@ namespace api {
           // Wait until my received thread get the result
           std::unique_lock<std::mutex> lk(m_get);
           cv_get.wait(lk, []{return get_ready;});
-
+          
           int out = buff_value;
           get_ready = false;
           (*collection)[first_idx].first =  out  ;
         }
+
+        loop = false;
+
         return ret_idx;
     }
 
     int DistributedAllocator::alloc() {
-//        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
+        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
         int alloc_idx = -1;
         // allocate memory
         if (!free_disp->empty()) {

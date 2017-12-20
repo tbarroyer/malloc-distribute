@@ -81,5 +81,7 @@ namespace api {
 
         static std::condition_variable cv;
         static std::condition_variable cv_get;
+
+        static bool loop;
     };
 }
