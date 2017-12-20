@@ -5,7 +5,7 @@
 # include <chrono>
 
 # include "api.hh"
-# define MAX_INT 10
+# define MAX_INT 320
 //# define MAX_INT INT_MAX
 namespace api {
 

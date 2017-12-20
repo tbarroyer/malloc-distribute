@@ -73,8 +73,6 @@ namespace api {
 
         static std::queue<Message>* send_queue;
 
-        //static std::queue<int>* free_disp;
-
         static std::thread re;
         static std::thread se;
 
