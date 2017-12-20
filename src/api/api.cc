@@ -5,7 +5,7 @@
 # include <chrono>
 
 # include "api.hh"
-# define MAX_INT 40
+# define MAX_INT 10
 //# define MAX_INT INT_MAX
 namespace api {
 
@@ -13,6 +13,14 @@ namespace api {
     // ===========================
     // ===========================
     // ===========================
+    
+
+    bool DistributedAllocator::last = false;
+    bool DistributedAllocator::demand = false;
+    
+    int DistributedAllocator::last_head = -1;  
+    int DistributedAllocator::first_head = -1;  
+
     int DistributedAllocator::world_size = 0;
     int DistributedAllocator::world_rank = 0;
 
@@ -36,8 +44,6 @@ namespace api {
 
     std::queue<int>* DistributedAllocator::free_disp = new std::queue<int>();
 
-    bool DistributedAllocator::loop = false;
-
     // Member definitions ========
     // ===========================
     // ===========================
@@ -45,10 +51,12 @@ namespace api {
 
     void DistributedAllocator::loop_re() {
         int* buf = (int*)malloc(2 * sizeof (int));
+        int id_pro = -1;
         MPI_Status status;
         while (1) {
             // Wait until it received something
             MPI_Recv(buf, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
             if (status.MPI_SOURCE == world_rank && status.MPI_TAG == 4) {
 
 //                std::cout << "Receive thread break" << std::endl;
@@ -73,7 +81,7 @@ namespace api {
             }
 
             else if (status.MPI_TAG == 77 || status.MPI_TAG == 33 || status.MPI_TAG == 22 ||
-                     status.MPI_TAG == 76 || status.MPI_TAG == 45 ) {
+                     status.MPI_TAG == 76) {
 
                 buff_value = buf[0];
                 get_ready = true;
@@ -113,17 +121,39 @@ namespace api {
             }
             // Someone want to alloc rest collection
             else if (status.MPI_TAG == 44) {
-                if (!loop) {
-                  int idx = alloc(buf[0]);
-                  Message m = {status.MPI_SOURCE, 45, {idx, -1}};
-                  send_queue->push(m);
-                  cv.notify_one();
+                async_alloc(buf[0]);
+                id_pro = status.MPI_SOURCE;
+            }
+
+            else if (status.MPI_TAG == 45) {
+
+                buff_value = buf[0];
+
+                if (!demand) {
+                    Message m = {id_pro, 45, {last_head, -1}};
+                    send_queue->push(m);
+                    cv.notify_one();
                 }
                 else {
-                  Message m = {status.MPI_SOURCE, 45, {-1, -1}};
-                  send_queue->push(m);
-                  cv.notify_one();
+                    get_ready = true;
+                    cv_get.notify_one();
                 }
+                
+                (*collection)[first_head].first = buff_value;
+                
+                first_head = -1;
+                last_head = -1;
+            }
+
+            if (last)
+            {
+                Message m = {status.MPI_SOURCE, 45, {last_head, -1}};
+                send_queue->push(m);
+                cv.notify_one();
+
+                last_head = -1;
+
+                last = false;
             }
         }
     }
@@ -223,8 +253,56 @@ namespace api {
         }
     }
 
+    void DistributedAllocator::async_alloc(unsigned int size) {
+
+        int ret_idx = alloc();
+
+        int first_idx = ret_idx;
+        if (first_idx == -1)
+            return;
+
+
+        int second_idx;
+        unsigned int i = 1;
+        int process_id = cur_id / (MAX_INT / world_size);
+
+        while ((cur_id < max_id) && (i < size) && (world_rank == process_id))
+        {
+            second_idx = alloc();
+
+            if (second_idx == -1)
+                break;
+
+            (*collection)[first_idx].first = second_idx;
+            first_idx = second_idx;
+            process_id = cur_id / (MAX_INT / world_size);
+            i++;
+        }
+
+        if (process_id >= world_size)
+            process_id = 0;
+
+        if ((cur_id == max_id) && (i < size))
+        {
+            int nsize = size - i;
+
+            Message message = {process_id, 44, {nsize, -1}};
+            send_queue->push(message);
+            cv.notify_one();
+        }
+        else
+        {
+          last = true;
+        }
+
+        last_head = ret_idx;
+        first_head = first_idx;
+    }
+
+
 
     int DistributedAllocator::alloc(unsigned int size) {
+
         int ret_idx = alloc();
 
         int first_idx = ret_idx;
@@ -249,37 +327,37 @@ namespace api {
             i++;
         }
 
-        loop = true;
-
         if (process_id >= world_size)
-          process_id = 0;
+            process_id = 0;
 
         if ((cur_id == max_id) && (i < size))
         {
-          int nsize = size - i;
+            int nsize = size - i;
 
-          Message message = {process_id, 44, {nsize, -1}};
+            demand = true;
 
-          send_queue->push(message);
+            Message message = {process_id, 44, {nsize, -1}};
 
-          cv.notify_one();
+            send_queue->push(message);
+ 
+            cv.notify_one();
 
-          // Wait until my received thread get the result
-          std::unique_lock<std::mutex> lk(m_get);
-          cv_get.wait(lk, []{return get_ready;});
+            // Wait until my received thread get the result
+            std::unique_lock<std::mutex> lk(m_get);
+            cv_get.wait(lk, []{return get_ready;});
+
+            demand = false;
+
           
-          int out = buff_value;
-          get_ready = false;
-          (*collection)[first_idx].first =  out  ;
+            int out = buff_value;
+            get_ready = false;
+            (*collection)[first_idx].first =  out  ;
         }
-
-        loop = false;
-
         return ret_idx;
     }
 
     int DistributedAllocator::alloc() {
-        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
+//        std::cout << "Process " << world_rank << " is asking for memory" << std::endl;
         int alloc_idx = -1;
         // allocate memory
         if (!free_disp->empty()) {

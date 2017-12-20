@@ -29,6 +29,8 @@ namespace api {
         // allocate space for an integer
         // return id of the interger
         static int alloc(unsigned int size);
+        
+        static void async_alloc(unsigned int size);
 
         static int alloc();
 
@@ -82,6 +84,9 @@ namespace api {
         static std::condition_variable cv;
         static std::condition_variable cv_get;
 
-        static bool loop;
+        static int last_head;
+        static int first_head;
+        static bool last;
+        static bool demand;
     };
 }

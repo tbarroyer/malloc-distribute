@@ -4,8 +4,8 @@
 
 # include "api/api.hh"
 
-# define SIZE 40
-# define MAX_INT 40
+# define SIZE 10
+# define MAX_INT 10
 
 using namespace api;
 
@@ -20,19 +20,20 @@ int main() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    for (int i = 0; i < SIZE; i++)
-    {
-        if (i == world_rank * (MAX_INT / world_size))
-            i += (MAX_INT / world_size);
-        DistributedAllocator::write_at(0, i, i);
-    }
+    int start = world_rank * (MAX_INT / world_size);
+    int stop = (world_rank + 1) * (MAX_INT / world_size);
+
+    for (int i = start; i < stop; i++)
+        DistributedAllocator::write_at(0, i, world_rank);
     
     MPI_Barrier(MPI_COMM_WORLD);
 
     if (DistributedAllocator::world_rank == 0)
     {
         for (int i = 0; i < SIZE; ++i)
-            std::cout << i << "\t" << DistributedAllocator::at(0, i) << "\n";
+        {
+            std::cout << DistributedAllocator::at(0, i) << "\n";
+        }
     }
 
     DistributedAllocator::close();

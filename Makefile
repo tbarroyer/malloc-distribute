@@ -4,7 +4,7 @@ LDFLAGS=
 all: main
 
 check: main
-	mpirun -np 2 -hostfile hostfile main
+	mpirun -np 5 -hostfile hostfile main
 
 main: obj/main.o obj/api/api.o
 	$(CC) -o $@ $^ $(LDFLAGS)
