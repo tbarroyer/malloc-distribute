@@ -4,8 +4,8 @@
 
 # include "api/api.hh"
 
-# define SIZE 1000
-# define MAX_INT 1000
+# define SIZE 40
+# define MAX_INT 40
 
 using namespace api;
 
