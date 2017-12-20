@@ -11,7 +11,7 @@ using namespace api;
 int main() {
     DistributedAllocator::init();
 
-    if (DistributedAllocator::world_rank == 0)
+    if (DistributedAllocator::world_rank == 1)
     {
         int head = DistributedAllocator::alloc(SIZE);
 
@@ -23,10 +23,9 @@ int main() {
 
     if (DistributedAllocator::world_rank == 0)
     {
-        int head = 0;
         for (int i = 0; i < SIZE; i++)
         {
-            int val = DistributedAllocator::at(head, i);
+            int val = DistributedAllocator::at(0, i);
             std::cout << "Index is: " << i << " and value is " << val << std::endl;
         }
     }

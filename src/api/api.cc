@@ -216,47 +216,51 @@ namespace api {
 
 
     int DistributedAllocator::alloc(unsigned int size) {
-//        std::cout << "Process " << world_rank << " is asking for memory of size " << size << std::endl;
         int ret_idx = alloc();
+
         int first_idx = ret_idx;
         if (first_idx == -1)
             return first_idx;
+
+
         int second_idx;
         unsigned int i = 1;
         int process_id = cur_id / (MAX_INT / world_size);
+
         while ((cur_id < max_id) && (i < size) && (world_rank == process_id))
         {
             second_idx = alloc();
+
             if (second_idx == -1)
                 break;
+
             (*collection)[first_idx].first = second_idx;
-            //std::cout << "Process " << world_rank << " => Return of alloc is " << first_idx << " and next is " << second_idx << std::endl;
-//            std::cout << "Key " << first_idx << " with value "
-//                << (*collection)[first_idx].second << " has next id "
-//                << (*collection)[first_idx].first << std::endl;
             first_idx = second_idx;
             process_id = cur_id / (MAX_INT / world_size);
             i++;
         }
-        if ((cur_id == max_id) && (i < size) )
+
+        if (process_id >= world_size)
+          process_id = 0;
+
+        if ((cur_id == max_id) && (i < size))
         {
           int nsize = size - i;
+
           Message message = {process_id, 44, {nsize, -1}};
 
           send_queue->push(message);
 
           cv.notify_one();
 
-        // Wait until my received thread get the result
+          // Wait until my received thread get the result
           std::unique_lock<std::mutex> lk(m_get);
           cv_get.wait(lk, []{return get_ready;});
 
           int out = buff_value;
           get_ready = false;
-//          std::cout <<"Tag Message 44 " << first_idx <<" has next out "
-//          << out  <<" from procees : " << process_id << std::endl ;
-            (*collection)[first_idx].first =  out  ;
-          }
+          (*collection)[first_idx].first =  out  ;
+        }
         return ret_idx;
     }
 
