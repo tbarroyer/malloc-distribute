@@ -1,5 +1,5 @@
 CC=mpic++
-CFLAGS=-Wall -Wextra -Werror -g -std=c++11
+CFLAGS=-Wall -Wextra -Werror -O3 -std=c++11
 LDFLAGS=
 all: main
 
