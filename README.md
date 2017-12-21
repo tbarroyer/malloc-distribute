@@ -1,4 +1,5 @@
 This file explain how to use the API:
+    Please use make check for a simple run of the program
 
 void init();
 	This function initializes a DistributedAllocator dans must be call by all the processes.
@@ -28,13 +29,19 @@ static bool write(int id, int value);
 
 ---------------------------------------------------------------------------------------------------
 
-Important: 
+CAUTION:
+- Please don't use more process than core you have on your machine, or the programm will be very slow.
+  Because MPI can emulate more processes than cores, on low peformance processor it result in a very poor performance.
+  We experienced very strange behaviors on different configuration. If you have two cores on you machine please use 2 process.
+  And four process if your have an i7 for example.
+- Please inform us if the code doesn't work on your machine, we noticed that for unknown reason it can't work on some configuration
 - The user has to call the API through the master process which world_rank is 0.
 - The default max memory is MAX_INT, it was set for test purposes.
 
   If you want to be able to allocate the max memory please define de static variable in "src/api/api.cc"
   "# define MAX_INT INT_MAX"
 
+--------------------------------------------------------------------------------------------------
 Mandatory calls are:
 
 int main()

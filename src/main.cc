@@ -12,7 +12,6 @@ void swap(int id1, int id2)
 {
     int a = DistributedAllocator::read(id1);
     int b = DistributedAllocator::read(id2);
-    
 
     DistributedAllocator::write(id2, a);
     DistributedAllocator::write(id1, b);
@@ -70,9 +69,7 @@ int main()
         }
 
         std::cout << "\n\nBEGIN SORT\n\n";
-  
         quick_sort(array, array + SIZE - 1);
-       
         idx = array;
 
         for (int i = 0; i < SIZE; ++i)
@@ -80,7 +77,6 @@ int main()
             std::cout << DistributedAllocator::read(idx) << " ";
             idx = DistributedAllocator::next(idx);
         }
-        
         std::cout << "\n";
     }
 
