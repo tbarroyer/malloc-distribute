@@ -34,6 +34,7 @@ CAUTION:
   Because MPI can emulate more processes than cores, on low peformance processor it result in a very poor performance.
   We experienced very strange behaviors on different configuration. If you have two cores on you machine please use 2 process.
   And four process if your have an i7 for example.
+- For an unknown reason, on some configuration the code must be re-launch a second time to work.
 - Please inform us if the code doesn't work on your machine, we noticed that for unknown reason it can't work on some configuration
 - The user has to call the API through the master process which world_rank is 0.
 - The default max memory is MAX_INT, it was set for test purposes.

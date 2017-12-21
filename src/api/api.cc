@@ -5,7 +5,7 @@
 # include <chrono>
 
 # include "api.hh"
-# define MAX_INT 3200
+# define MAX_INT 320
 //# define MAX_INT INT_MAX
 namespace api {
     // Static variable initialisation
@@ -209,7 +209,7 @@ namespace api {
         {
             // Wait until a send is needed
             std::unique_lock<std::mutex> lk(m);
-            cv.wait_for(lk, std::chrono::milliseconds(100),  []{return !send_queue->empty();});
+            cv.wait_for(lk, std::chrono::milliseconds(500),  []{return !send_queue->empty();});
 
             Message msg;
 

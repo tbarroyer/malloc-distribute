@@ -4,7 +4,7 @@
 
 # include "api/api.hh"
 
-# define SIZE 3200
+# define SIZE 320
 
 using namespace api;
 
